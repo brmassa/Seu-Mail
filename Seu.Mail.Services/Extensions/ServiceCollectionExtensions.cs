@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
 
         // Discovery and detection services
         services.AddScoped<IDnsEmailDiscoveryService, DnsEmailDiscoveryService>();
+        services.AddScoped<IEmailHttpClient, DefaultEmailHttpClient>();
         services.AddScoped<IEmailAutodiscoveryService, EmailAutodiscoveryService>();
         services.AddScoped<IEmailProviderDetectionService, EmailProviderDetectionService>();
 

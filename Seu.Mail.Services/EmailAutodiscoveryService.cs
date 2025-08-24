@@ -14,7 +14,7 @@ namespace Seu.Mail.Services;
 /// </summary>
 public class EmailAutodiscoveryService : IEmailAutodiscoveryService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IEmailHttpClient _httpClient;
     private readonly ILogger<EmailAutodiscoveryService> _logger;
     private readonly IDnsEmailDiscoveryService _dnsDiscoveryService;
 
@@ -25,7 +25,7 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
     /// <param name="logger">Logger for autodiscovery events and errors.</param>
     /// <param name="dnsDiscoveryService">DNS discovery service for resolving email server information.</param>
     public EmailAutodiscoveryService(
-        HttpClient httpClient,
+        IEmailHttpClient httpClient,
         ILogger<EmailAutodiscoveryService> logger,
         IDnsEmailDiscoveryService dnsDiscoveryService)
     {
@@ -35,7 +35,7 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
 
         // Configure HttpClient
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Seu.Mail/1.0 (Email Client)");
+        _httpClient.SetUserAgent("Seu.Mail/1.0 (Email Client)");
     }
 
     /// <summary>
@@ -116,12 +116,9 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             {
                 try
                 {
-                    using var content = new StringContent(requestXml, System.Text.Encoding.UTF8, "text/xml");
-                    using var response = await _httpClient.PostAsync(url, content);
-
-                    if (response.IsSuccessStatusCode)
+                    var responseXml = await _httpClient.PostStringAsync(url, requestXml, "text/xml");
+                    if (responseXml != null)
                     {
-                        var responseXml = await response.Content.ReadAsStringAsync();
                         var settings = ParseOutlookAutodiscoverResponse(responseXml, domain);
                         if (settings != null)
                         {
@@ -167,11 +164,14 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
-                    var settings = ParseMozillaAutoconfigResponse(response, domain);
-                    if (settings != null)
+                    if (response != null)
                     {
-                        _logger.LogInformation("Mozilla autoconfig successful for domain {Domain} at {Url}", domain, url);
-                        return settings;
+                        var settings = ParseMozillaAutoconfigResponse(response, domain);
+                        if (settings != null)
+                        {
+                            _logger.LogInformation("Mozilla autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            return settings;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -209,11 +209,14 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
-                    var settings = ParseAppleAutoconfigResponse(response, domain);
-                    if (settings != null)
+                    if (response != null)
                     {
-                        _logger.LogInformation("Apple autoconfig successful for domain {Domain} at {Url}", domain, url);
-                        return settings;
+                        var settings = ParseAppleAutoconfigResponse(response, domain);
+                        if (settings != null)
+                        {
+                            _logger.LogInformation("Apple autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            return settings;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -255,11 +258,14 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
-                    var settings = ParseWellKnownResponse(response, domain);
-                    if (settings != null)
+                    if (response != null)
                     {
-                        _logger.LogInformation("Well-known autoconfig successful for domain {Domain} at {Url}", domain, url);
-                        return settings;
+                        var settings = ParseWellKnownResponse(response, domain);
+                        if (settings != null)
+                        {
+                            _logger.LogInformation("Well-known autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            return settings;
+                        }
                     }
                 }
                 catch (Exception ex)
