@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Seu.Mail.Web</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsNotAsErrors);1591</WarningsAsErrors>
+    <UserSecretsId>aspnet-Seu.Mail.Web-12345678-1234-1234-1234-123456789012</UserSecretsId>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Seu.Mail.Web</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Bruno Massa</Authors>
+    <Company>Seu Project</Company>
+    <Product>Seu Mail Web</Product>
+    <Description>Blazor Server web application for Seu Mail - a privacy-focused email client</Description>
+    <Copyright>Copyright © 2024 Bruno Massa</Copyright>
+    <PackageProjectUrl>https://github.com/brmassa/Seu-Mail</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/brmassa/Seu-Mail</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>email;privacy;blazor;web;ui</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.8" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Bootstrap" Version="5.3.7" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj" />
+    <ProjectReference Include="..\Seu.Mail.Contracts\Seu.Mail.Contracts.csproj" />
+    <ProjectReference Include="..\Seu.Mail.Data\Seu.Mail.Data.csproj" />
+    <ProjectReference Include="..\Seu.Mail.Services\Seu.Mail.Services.csproj" />
+    <ProjectReference Include="..\Seu.Mail.Calendar\Seu.Mail.Calendar.csproj" />
+    <ProjectReference Include="..\Seu.Mail.Shared\Seu.Mail.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.Production.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

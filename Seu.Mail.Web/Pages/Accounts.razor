@@ -1,0 +1,824 @@
+@page "/accounts"
+@inject IAccountService AccountService
+@inject IEmailService EmailService
+@inject IEmailProviderDetectionService ProviderDetectionService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Manage Accounts - seu</PageTitle>
+
+<div class="accounts-container h-100">
+    <div class="accounts-header bg-white border-bottom p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i class="fas fa-cog me-2 text-primary"></i>
+                Manage Email Accounts
+            </h4>
+            <button class="btn btn-primary" @onclick="ShowAddAccountModal">
+                <i class="fas fa-plus me-2"></i>
+                Add Account
+            </button>
+        </div>
+    </div>
+
+    <div class="accounts-content flex-grow-1 overflow-auto p-4">
+        @if (isLoading)
+        {
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading accounts...</p>
+            </div>
+        }
+        else if (!accounts.Any())
+        {
+            <div class="empty-state text-center p-5">
+                <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No email accounts configured</h5>
+                <p class="text-muted">Add your first email account to get started</p>
+                <button class="btn btn-primary" @onclick="ShowAddAccountModal">
+                    <i class="fas fa-plus me-2"></i>
+                    Add Your First Account
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="accounts-list">
+                @foreach (var account in accounts)
+                {
+                    <div class="account-card card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="account-info flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="account-avatar me-3">
+                                            <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">
+                                                @account.GetDisplayName()
+                                                @if (account.IsDefault)
+                                                {
+                                                    <span class="badge bg-success ms-2">Default</span>
+                                                }
+                                            </h5>
+                                            <p class="text-muted mb-0">@account.Email</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="account-details">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>SMTP:</strong> @account.SmtpServer:@account.SmtpPort
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>IMAP:</strong> @account.ImapServer:@account.ImapPort
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-1">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>SSL:</strong> @(account.UseSsl ? "Enabled" : "Disabled")
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>Added:</strong> @account.CreatedAt.ToString("MMM dd, yyyy")
+                                                </small>
+                                            </div>
+                                        </div>
+                                        @if (account.LastSyncAt != DateTime.MinValue)
+                                        {
+                                            <div class="row mt-1">
+                                                <div class="col-12">
+                                                    <small class="text-muted">
+                                                        <strong>Last Sync:</strong> @(account.LastSyncAt?.ToString("MMM dd, yyyy 'at' HH:mm") ?? "Never")
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="account-actions">
+                                    <div class="btn-group-vertical" role="group">
+                                        @if (!account.IsDefault)
+                                        {
+                                            <button class="btn btn-outline-success btn-sm mb-1"
+                                                    @onclick="() => SetDefaultAccount(account.Id)">
+                                                <i class="fas fa-check"></i>
+                                                Set Default
+                                            </button>
+                                        }
+                                        <button class="btn btn-outline-primary btn-sm mb-1"
+                                                @onclick="() => TestConnection(account)">
+                                            <i class="fas fa-plug"></i>
+                                            Test
+                                        </button>
+                                        <button class="btn btn-outline-info btn-sm mb-1"
+                                                @onclick="() => SyncAccount(account)">
+                                            <i class="fas fa-sync-alt"></i>
+                                            Sync
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm mb-1"
+                                                @onclick="() => SyncFolders(account)">
+                                            <i class="fas fa-folder-open"></i>
+                                            Folders
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm mb-1"
+                                                @onclick="() => EditAccount(account)">
+                                            <i class="fas fa-edit"></i>
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => DeleteAccount(account)">
+                                            <i class="fas fa-trash"></i>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Add/Edit Account Modal -->
+@if (showAccountModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @if (editingAccount == null)
+                        {
+                            <i class="fas fa-plus me-2"></i>
+                            @:Add Email Account
+                        }
+                        else
+                        {
+                            <i class="fas fa-edit me-2"></i>
+                            @:Edit Email Account
+                        }
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideAccountModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@accountModel" OnValidSubmit="@SaveAccount">
+                        <DataAnnotationsValidator />
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Display Name <span class="text-muted">(optional)</span></label>
+                                <InputText class="form-control" @bind-Value="accountModel.DisplayName"
+                                          placeholder="Your Name (optional - will use email if empty)" />
+                                <ValidationMessage For="@(() => accountModel.DisplayName)" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="accountModel.Email"
+                                          placeholder="your.email@example.com" type="email" required
+                                          @onblur="OnEmailAddressChanged" />
+                                <ValidationMessage For="@(() => accountModel.Email)" />
+                                @if (isDetectingProvider)
+                                {
+                                    <small class="text-info">
+                                        <i class="fas fa-spinner fa-spin me-1"></i>
+                                        Detecting provider settings...
+                                    </small>
+                                }
+                                else if (!string.IsNullOrEmpty(detectedProviderMessage))
+                                {
+                                    <small class="@(detectedProviderMessage.Contains("Error") || detectedProviderMessage.Contains("Could not") ? "text-warning" : "text-success")">
+                                        <i class="fas @(detectedProviderMessage.Contains("Error") || detectedProviderMessage.Contains("Could not") ? "fa-exclamation-triangle" : "fa-check") me-1"></i>
+                                        @detectedProviderMessage
+                                    </small>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="accountModel.Password"
+                                      @oninput="OnPasswordChanged"
+                                      placeholder="Your email password" type="password" required />
+                            <ValidationMessage For="@(() => accountModel.Password)" />
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Use an app password for Gmail and other providers that require it.
+                                <a href="#" @onclick:preventDefault="true" @onclick="ShowPasswordHelp" class="text-decoration-none">
+                                    <small>Need help?</small>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Quick Setup for Common Providers -->
+                        <div class="mb-3">
+                            <label class="form-label">Quick Setup</label>
+                            <div class="btn-group w-100" role="group">
+                                @foreach (var provider in availableProviders)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            @onclick="@(() => SetupProvider(provider.Key))">
+                                        @provider.Value.DisplayName
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-outline-secondary"
+                                        @onclick="@(() => SetupProvider("Custom"))">
+                                    Custom
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SMTP Settings -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    SMTP Settings (Outgoing Mail)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">SMTP Server <span class="text-danger">*</span></label>
+                                        <InputText class="form-control" @bind-Value="accountModel.SmtpServer"
+                                                  placeholder="smtp.example.com" required />
+                                        <ValidationMessage For="@(() => accountModel.SmtpServer)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Port <span class="text-danger">*</span></label>
+                                        <InputNumber class="form-control" @bind-Value="accountModel.SmtpPort" required />
+                                        <ValidationMessage For="@(() => accountModel.SmtpPort)" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IMAP Settings -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-inbox me-2"></i>
+                                    IMAP Settings (Incoming Mail)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">IMAP Server <span class="text-danger">*</span></label>
+                                        <InputText class="form-control" @bind-Value="accountModel.ImapServer"
+                                                  placeholder="imap.example.com" required />
+                                        <ValidationMessage For="@(() => accountModel.ImapServer)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Port <span class="text-danger">*</span></label>
+                                        <InputNumber class="form-control" @bind-Value="accountModel.ImapPort" required />
+                                        <ValidationMessage For="@(() => accountModel.ImapPort)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="accountModel.UseSsl" />
+                                    <label class="form-check-label">
+                                        Use SSL/TLS encryption (recommended)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="TestAccountConnection" disabled="@isTestingConnection">
+                                @if (isTestingConnection)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-plug me-2"></i>
+                                }
+                                Test Connection
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-secondary me-2" @onclick="HideAccountModal">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    @if (editingAccount == null)
+                                    {
+                                        @:Add Account
+                                    }
+                                    else
+                                    {
+                                        @:Update Account
+                                    }
+                                </button>
+                                <button type="button" class="btn btn-outline-success ms-2" @onclick="SaveAccountWithoutTest" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-save me-2"></i>
+                                    }
+                                    Save Without Test
+                                </button>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal && accountToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the account <strong>@accountToDelete.Email</strong>?</p>
+                    <p class="text-warning">This action cannot be undone. All emails associated with this account will also be deleted.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">
+                        <i class="fas fa-trash me-2"></i>
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Toast Messages -->
+@if (showToast)
+{
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">@toastTitle</strong>
+                <button type="button" class="btn-close" @onclick="() => showToast = false"></button>
+            </div>
+            <div class="toast-body">
+                @toastMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<EmailAccount> accounts = new();
+    private bool isLoading = true;
+    private bool showAccountModal = false;
+    private bool showDeleteModal = false;
+    private bool isSaving = false;
+    private bool isDetectingProvider = false;
+    private bool isTestingConnection = false;
+    private EmailAccount accountModel = new();
+    private EmailAccount? editingAccount = null;
+    private EmailAccount? accountToDelete = null;
+    private bool passwordChanged = false;
+    private Dictionary<string, EmailProviderSettings> availableProviders = new();
+    private string detectedProviderMessage = string.Empty;
+    // Password help is handled in the UI
+
+    // Toast properties
+    private bool showToast = false;
+    private string toastTitle = "";
+    private string toastMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccounts();
+        await LoadAvailableProviders();
+    }
+
+    private async Task LoadAccounts()
+    {
+        isLoading = true;
+        try
+        {
+            accounts = await AccountService.GetAllAccountsAsync();
+        }
+        catch (Exception)
+        {
+            ShowToast("Error", "Failed to load accounts.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadAvailableProviders()
+    {
+        try
+        {
+            var providers = await ProviderDetectionService.GetAllProvidersAsync();
+            availableProviders = providers.ToDictionary(p => p.DisplayName.Replace("/", "_").Replace(" ", ""), p => p);
+        }
+        catch (Exception)
+        {
+            ShowToast("Warning", "Could not load provider configurations.");
+        }
+    }
+
+    private void ShowAddAccountModal()
+    {
+        editingAccount = null;
+        accountModel = new EmailAccount();
+        detectedProviderMessage = string.Empty;
+        passwordChanged = false;
+        showAccountModal = true;
+    }
+
+    private void EditAccount(EmailAccount account)
+    {
+        editingAccount = account;
+        accountModel = new EmailAccount
+        {
+            Id = account.Id,
+            DisplayName = account.DisplayName,
+            Email = account.Email,
+            Password = "***UNCHANGED***", // Placeholder to indicate password is set
+            SmtpServer = account.SmtpServer,
+            SmtpPort = account.SmtpPort,
+            ImapServer = account.ImapServer,
+            ImapPort = account.ImapPort,
+            UseSsl = account.UseSsl
+        };
+        passwordChanged = false;
+        showAccountModal = true;
+    }
+
+    private void HideAccountModal()
+    {
+        showAccountModal = false;
+        editingAccount = null;
+        accountModel = new EmailAccount();
+        passwordChanged = false;
+    }
+
+    private async Task SaveAccount()
+    {
+        await SaveAccountInternal(testConnection: true);
+    }
+
+    private async Task SaveAccountWithoutTest()
+    {
+        await SaveAccountInternal(testConnection: false);
+    }
+
+    private async Task SaveAccountInternal(bool testConnection)
+    {
+        if (isSaving) return;
+
+        isSaving = true;
+        try
+        {
+            // Test connection first if requested
+            if (testConnection)
+            {
+                // For new accounts, password is required
+                // For existing accounts, either password changed or we use existing
+                if (editingAccount == null && string.IsNullOrEmpty(accountModel.Password))
+                {
+                    ShowToast("Validation Error", "Password is required for new accounts.");
+                    return;
+                }
+
+                // For existing accounts, if no password entered and not changed, we'll use existing
+                if (editingAccount != null && !passwordChanged && (string.IsNullOrEmpty(accountModel.Password) || accountModel.Password == "***UNCHANGED***"))
+                {
+                    // Set the placeholder so ValidateAccountAsync knows to use existing password
+                    accountModel.Password = "***UNCHANGED***";
+                }
+
+                var connectionResult = await AccountService.ValidateAccountAsync(accountModel);
+                if (!connectionResult.IsSuccessful)
+                {
+                    ShowToast("Connection Error", $"Connection test failed: {connectionResult.GetErrorMessage()}. Use 'Save Without Test' to save anyway.");
+                    return;
+                }
+            }
+
+            bool success;
+            if (editingAccount == null)
+            {
+                success = await AccountService.AddAccountAsync(accountModel);
+                if (success)
+                {
+                    ShowToast("Success", testConnection ? "Account added and tested successfully!" : "Account added successfully!");
+                    await LoadAccounts();
+                    HideAccountModal();
+                }
+                else
+                {
+                    ShowToast("Error", "Failed to add account. The email address may already exist or connection settings are invalid.");
+                }
+            }
+            else
+            {
+                // For updates, only change password if user actually modified it
+                if (!passwordChanged)
+                {
+                    accountModel.Password = editingAccount.Password; // Keep existing encrypted password
+                }
+                success = await AccountService.UpdateAccountAsync(accountModel);
+                if (success)
+                {
+                    ShowToast("Success", testConnection ? "Account updated and tested successfully!" : "Account updated successfully!");
+                    await LoadAccounts();
+                    HideAccountModal();
+                }
+                else
+                {
+                    ShowToast("Error", "Failed to update account. Please verify your connection settings and try again.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Error saving account: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task SyncFolders(EmailAccount account)
+    {
+        try
+        {
+            ShowToast("Info", "Syncing folders and tags...");
+            await AccountService.SyncAccountFoldersAndTagsAsync(account.Id);
+            ShowToast("Success", "Folders and tags synced successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Folder sync failed: {ex.Message}");
+        }
+    }
+
+    private async Task SetDefaultAccount(int accountId)
+    {
+        try
+        {
+            var success = await AccountService.SetDefaultAccountAsync(accountId);
+            if (success)
+            {
+                ShowToast("Success", "Default account updated!");
+                await LoadAccounts();
+            }
+            else
+            {
+                ShowToast("Error", "Failed to set default account.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Error setting default account: {ex.Message}");
+        }
+    }
+
+    private async Task TestConnection(EmailAccount account)
+    {
+        try
+        {
+            ShowToast("Info", "Testing connection...");
+            var result = await AccountService.ValidateAccountAsync(account);
+            if (result.IsSuccessful)
+            {
+                ShowToast("Success", "Connection test successful!");
+            }
+            else
+            {
+                ShowToast("Error", result.GetErrorMessage());
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Connection test failed: {ex.Message}");
+        }
+    }
+
+    private async Task TestAccountConnection()
+    {
+        if (isTestingConnection) return;
+
+        isTestingConnection = true;
+        try
+        {
+            var result = await AccountService.ValidateAccountAsync(accountModel);
+            if (result.IsSuccessful)
+            {
+                ShowToast("Success", "Connection test successful! ✓ SMTP and IMAP connections are working.");
+            }
+            else
+            {
+                ShowToast("Error", result.GetErrorMessage());
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Connection test failed: {ex.Message}");
+        }
+        finally
+        {
+            isTestingConnection = false;
+        }
+    }
+
+    private async Task SyncAccount(EmailAccount account)
+    {
+        try
+        {
+            ShowToast("Info", "Syncing emails...");
+            await EmailService.SyncEmailsAsync(account);
+            ShowToast("Success", "Account synced successfully!");
+            await LoadAccounts();
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Sync failed: {ex.Message}");
+        }
+    }
+
+    private void DeleteAccount(EmailAccount account)
+    {
+        accountToDelete = account;
+        showDeleteModal = true;
+    }
+
+    private void HideDeleteModal()
+    {
+        showDeleteModal = false;
+        accountToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (accountToDelete == null) return;
+
+        try
+        {
+            var success = await AccountService.DeleteAccountAsync(accountToDelete.Id);
+            if (success)
+            {
+                ShowToast("Success", "Account deleted successfully!");
+                await LoadAccounts();
+                HideDeleteModal();
+            }
+            else
+            {
+                ShowToast("Error", "Failed to delete account.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Error deleting account: {ex.Message}");
+        }
+    }
+
+    private void SetupProvider(string providerKey)
+    {
+        if (providerKey.ToLower() == "custom")
+        {
+            accountModel.SmtpServer = "";
+            accountModel.SmtpPort = 587;
+            accountModel.ImapServer = "";
+            accountModel.ImapPort = 993;
+            accountModel.UseSsl = true;
+            detectedProviderMessage = "";
+            return;
+        }
+
+        if (availableProviders.TryGetValue(providerKey, out var provider))
+        {
+            accountModel.SmtpServer = provider.SmtpServer;
+            accountModel.SmtpPort = provider.SmtpPort;
+            accountModel.ImapServer = provider.ImapServer;
+            accountModel.ImapPort = provider.ImapPort;
+            accountModel.UseSsl = provider.UseSsl;
+            detectedProviderMessage = $"Settings applied for {provider.DisplayName}";
+        }
+    }
+
+    private void OnPasswordChanged(ChangeEventArgs e)
+    {
+        var newPassword = e.Value?.ToString() ?? "";
+        if (editingAccount != null && newPassword != "***UNCHANGED***")
+        {
+            passwordChanged = true;
+        }
+        accountModel.Password = newPassword;
+    }
+
+    private async Task OnEmailAddressChanged()
+    {
+        if (string.IsNullOrWhiteSpace(accountModel.Email) || editingAccount != null)
+            return;
+
+        isDetectingProvider = true;
+        detectedProviderMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            // First try configuration-based detection
+            var detectedProvider = await ProviderDetectionService.DetectProviderAsync(accountModel.Email);
+
+            if (detectedProvider == null)
+            {
+                // If no configuration found, try probing servers
+                detectedProviderMessage = "No configuration found. Probing servers...";
+                StateHasChanged();
+                detectedProvider = await ProviderDetectionService.ProbeAndDetectProviderAsync(accountModel.Email);
+            }
+
+            if (detectedProvider != null)
+            {
+                accountModel.SmtpServer = detectedProvider.SmtpServer;
+                accountModel.SmtpPort = detectedProvider.SmtpPort;
+                accountModel.ImapServer = detectedProvider.ImapServer;
+                accountModel.ImapPort = detectedProvider.ImapPort;
+                accountModel.UseSsl = detectedProvider.UseSsl;
+
+                var detectionMethod = detectedProvider.DisplayName.Contains("Auto-detected") ? "server probing" : "configuration";
+                detectedProviderMessage = $"Settings detected via {detectionMethod}: {detectedProvider.DisplayName}";
+
+                // Update display name if not set
+                if (string.IsNullOrWhiteSpace(accountModel.DisplayName))
+                {
+                    var emailParts = accountModel.Email.Split('@');
+                    if (emailParts.Length > 0)
+                    {
+                        accountModel.DisplayName = emailParts[0];
+                    }
+                }
+
+                // Force UI update to show the populated fields
+                StateHasChanged();
+            }
+            else
+            {
+                detectedProviderMessage = "Could not detect provider settings automatically. Please configure manually or use 'Save Without Test' to skip validation.";
+            }
+        }
+        catch (Exception)
+        {
+            detectedProviderMessage = "Failed to detect email provider settings.";
+        }
+        finally
+        {
+            isDetectingProvider = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowToast(string title, string message)
+    {
+        toastTitle = title;
+        toastMessage = message;
+        showToast = true;
+        StateHasChanged();
+
+        Task.Delay(5000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void ShowPasswordHelp()
+    {
+        ShowToast("Password Help", "For Gmail: Use App Passwords (Settings > Security > 2-Step Verification > App passwords). For Outlook: Use your regular password or App Password if 2FA is enabled. For other providers: Check their documentation for IMAP/SMTP authentication requirements.");
+    }
+}

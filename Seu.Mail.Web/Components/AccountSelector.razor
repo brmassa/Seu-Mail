@@ -1,0 +1,126 @@
+@using Seu.Mail.Core.Models
+@inject IAccountService AccountService
+
+@*
+/// <summary>
+/// Account selector component for switching between configured email accounts.
+/// Displays a dropdown list of available accounts with user avatars and email addresses.
+/// </summary>
+*@
+
+<div class="account-selector">
+    @if (accounts.Any())
+    {
+        <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown">
+                <div class="d-flex align-items-center">
+                    <div class="avatar me-2">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">@(selectedAccount?.DisplayName ?? "No Account")</div>
+                        <small class="text-muted">@(selectedAccount?.Email ?? "")</small>
+                    </div>
+                </div>
+            </button>
+            <ul class="dropdown-menu w-100">
+                @foreach (var account in accounts)
+                {
+                    <li>
+                        <a class="dropdown-item @(account.Id == selectedAccount?.Id ? "active" : "")"
+                           href="#" @onclick="() => SelectAccount(account)" @onclick:preventDefault="true">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar me-2">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@account.DisplayName</div>
+                                    <small class="text-muted">@account.Email</small>
+                                </div>
+                                @if (account.IsDefault)
+                                {
+                                    <i class="fas fa-check text-success"></i>
+                                }
+                            </div>
+                        </a>
+                    </li>
+                }
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="/accounts">
+                        <i class="fas fa-plus me-2"></i>
+                        Add Account
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/accounts">
+                        <i class="fas fa-cog me-2"></i>
+                        Manage Accounts
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="text-center">
+            <p class="mb-2">No accounts configured</p>
+            <a href="/accounts" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-plus me-1"></i>
+                Add Account
+            </a>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Event callback triggered when an account is selected from the dropdown.
+    /// </summary>
+    [Parameter] public EventCallback<EmailAccount> OnAccountChanged { get; set; }
+
+    private List<EmailAccount> accounts = new();
+    private EmailAccount? selectedAccount;
+
+    /// <summary>
+    /// Initializes the component by loading available accounts.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccounts();
+    }
+
+    /// <summary>
+    /// Loads all available email accounts and sets the default account as selected.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task LoadAccounts()
+    {
+        accounts = await AccountService.GetAllAccountsAsync();
+        selectedAccount = await AccountService.GetDefaultAccountAsync();
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Handles account selection, updates the default account, and triggers the callback.
+    /// </summary>
+    /// <param name="account">The account that was selected.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task SelectAccount(EmailAccount account)
+    {
+        selectedAccount = account;
+        await AccountService.SetDefaultAccountAsync(account.Id);
+        await OnAccountChanged.InvokeAsync(account);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Refreshes the list of available accounts from the service.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task RefreshAccounts()
+    {
+        await LoadAccounts();
+    }
+}

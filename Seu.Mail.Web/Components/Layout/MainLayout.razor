@@ -1,0 +1,282 @@
+@inherits LayoutComponentBase
+@inject IEmailService EmailService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<div class="d-flex vh-100">
+    <!-- Sidebar -->
+    <div class="sidebar bg-dark text-white" style="width: 250px; min-width: 250px;">
+        <div class="sidebar-header p-3 border-bottom border-secondary">
+            <h4 class="text-center">
+                <i class="fas fa-envelope me-2"></i>Seu Email
+            </h4>
+        </div>
+
+        <!-- Account Selector -->
+        <div class="p-3 border-bottom border-secondary">
+            <AccountSelector />
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav p-3">
+            <div class="nav flex-column">
+                <NavLink class="nav-link text-white" href="/unified">
+                    <i class="fas fa-layer-group me-2"></i>
+                    All Accounts
+                    <span class="badge bg-info ms-auto">@accounts.Count</span>
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/" Match="NavLinkMatch.All">
+                    <i class="fas fa-inbox me-2"></i>
+                    Inbox
+                    <span class="badge bg-primary ms-auto">@UnreadCount</span>
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/sent">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    Sent
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/drafts">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Drafts
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/trash">
+                    <i class="fas fa-trash me-2"></i>
+                    Trash
+                </NavLink>
+
+                <hr class="text-secondary">
+
+                <NavLink class="nav-link text-white" href="/compose">
+                    <i class="fas fa-edit me-2"></i>
+                    Compose
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/accounts">
+                    <i class="fas fa-cog me-2"></i>
+                    Accounts
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/folders-tags">
+                    <i class="fas fa-folder me-2"></i>
+                    Folders & Tags
+                </NavLink>
+
+                <NavLink class="nav-link text-white" href="/calendar">
+                    <i class="fas fa-calendar me-2"></i>
+                    Calendar
+                </NavLink>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content flex-grow-1 d-flex flex-column">
+        <!-- Top Bar -->
+        <div class="top-bar bg-light border-bottom p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-outline-primary me-2" @onclick="RefreshEmails">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                    <button class="btn btn-outline-success" @onclick="SyncAllAccounts">
+                        <i class="fas fa-download"></i>
+                        Sync All
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="search-box">
+                        <div class="input-group" style="width: 300px;">
+                            <input type="text" class="form-control" placeholder="Search emails..." @bind="SearchQuery" @onkeypress="OnSearchKeyPress">
+                            <button class="btn btn-outline-secondary" type="button" @onclick="SearchEmails">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Settings Button -->
+                    <NavLink class="btn btn-outline-secondary" href="/settings" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="page-content flex-grow-1 overflow-auto">
+            @Body
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+@if (IsLoading)
+{
+    <div class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    @if (ShowToast)
+    {
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">@ToastTitle</strong>
+                <button type="button" class="btn-close" @onclick="() => ShowToast = false"></button>
+            </div>
+            <div class="toast-body">
+                @ToastMessage
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int UnreadCount = 0;
+    private bool IsLoading = false;
+    private string SearchQuery = "";
+    private List<EmailAccount> accounts = new();
+
+    // Toast properties
+    private bool ShowToast = false;
+    private string ToastTitle = "";
+    private string ToastMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateUnreadCount();
+        await LoadAccounts();
+    }
+
+    private async Task RefreshEmails()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Trigger refresh of current page
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+            await UpdateUnreadCount();
+            ShowToastMessage("Success", "Emails refreshed successfully.");
+        }
+        catch (Exception)
+        {
+            ShowToastMessage("Error", "Failed to refresh emails.");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SyncAllAccounts()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var accounts = await AccountService.GetAllAccountsAsync();
+            foreach (var account in accounts)
+            {
+                await EmailService.SyncEmailsAsync(account);
+            }
+
+            await UpdateUnreadCount();
+            ShowToastMessage("Success", "All accounts synced successfully.");
+        }
+        catch (Exception)
+        {
+            ShowToastMessage("Error", "Failed to sync accounts.");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateUnreadCount()
+    {
+        try
+        {
+            var defaultAccount = await AccountService.GetDefaultAccountAsync();
+            if (defaultAccount != null)
+            {
+                var emails = await EmailService.GetEmailsAsync(defaultAccount, "INBOX", 1000);
+                UnreadCount = emails.Count(e => !e.IsRead);
+            }
+        }
+        catch
+        {
+            UnreadCount = 0;
+        }
+    }
+
+    private void OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SearchEmails();
+        }
+    }
+
+    private void SearchEmails()
+    {
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            Navigation.NavigateTo($"/search?q={Uri.EscapeDataString(SearchQuery)}");
+        }
+    }
+
+    private void ShowToastMessage(string title, string message)
+    {
+        ToastTitle = title;
+        ToastMessage = message;
+        ShowToast = true;
+        StateHasChanged();
+
+        // Auto-hide toast after 3 seconds
+        _ = Task.Delay(3000).ContinueWith(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                ShowToast = false;
+                StateHasChanged();
+            });
+        });
+    }
+
+    private async Task LoadAccounts()
+    {
+        try
+        {
+            accounts = await AccountService.GetAllAccountsAsync();
+        }
+        catch
+        {
+            accounts = new List<EmailAccount>();
+        }
+    }
+}
+
+<script src="~/js/email-navigation.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            if (window.initializeResizablePanes) {
+                window.initializeResizablePanes();
+            }
+        }, 1000);
+    });
+</script>

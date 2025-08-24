@@ -1,0 +1,705 @@
+@page "/email-split-right/{EmailId:int}"
+@inject IEmailService EmailService
+@inject IAccountService AccountService
+@inject IUserSettingsService UserSettingsService
+@inject IHtmlUtilityService HtmlUtilityService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>@(HtmlUtilityService.StripHtml(selectedEmail?.Subject ?? "") ?? "Email") - Seu Email</PageTitle>
+
+<div class="email-split-container email-split-right h-100 d-flex">
+    <!-- Email List (Left Side) -->
+    <div class="email-list-section" style="width: 30%; border-right: 1px solid #dee2e6;">
+        <div class="email-list-header bg-white border-bottom p-3">
+            <h5 class="mb-0">
+                <i class="fas fa-inbox me-2 text-primary"></i>
+                Inbox
+                @if (emails.Any())
+                {
+                    <span class="badge bg-secondary ms-2">@emails.Count</span>
+                }
+            </h5>
+        </div>
+
+        <div class="email-list-content flex-grow-1 overflow-auto">
+            @if (isLoadingEmails)
+            {
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading emails...</p>
+                </div>
+            }
+            else if (!emails.Any())
+            {
+                <div class="empty-state text-center p-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Your inbox is empty</h5>
+                </div>
+            }
+            else
+            {
+                <div class="email-list">
+                    @foreach (var email in emails)
+                    {
+                        <div class="email-item @(email.IsRead ? "read" : "unread") @(selectedEmail?.Id == email.Id ? "selected" : "") @(userSettings?.UseCompactMode == true ? "compact" : "")"
+                             @onclick="() => SelectEmail(email.Id)">
+                            <div class="email-content p-2 w-100" style="min-width: 0;">
+                                <div class="email-header d-flex justify-content-between align-items-start w-100">
+                                    <div class="email-sender flex-shrink-1" style="min-width: 0;">
+                                        @if (userSettings?.EmailDisplayMode == EmailDisplayMode.TitleSender || userSettings?.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)
+                                        {
+                                            <strong class="sender-name small text-truncate d-block">@GetSenderName(email.From)</strong>
+                                        }
+                                    </div>
+                                    <div class="email-meta text-muted flex-shrink-0 ms-2">
+                                        <span class="email-date small">@FormatDate(email.DateReceived)</span>
+                                        @if (email.IsImportant)
+                                        {
+                                            <i class="fas fa-star text-warning ms-1"></i>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="email-subject small fw-bold w-100">
+                                    <div class="text-truncate">@HtmlUtilityService.StripHtml(email.Subject)</div>
+                                </div>
+
+                                @if (userSettings?.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview && userSettings?.ShowEmailPreview == true)
+                                {
+                                    <div class="email-preview text-muted small">
+                                        @GetEmailPreview(email)
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Email Content (Right Side) -->
+    <div class="email-view-section" style="width: 70%;">
+        @if (isLoadingEmail)
+        {
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading email...</span>
+                </div>
+                <p class="mt-3">Loading email...</p>
+            </div>
+        }
+        else if (selectedEmail == null)
+        {
+            <div class="text-center p-5 h-100 d-flex align-items-center justify-content-center">
+                <div>
+                    <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Select an email to read</h5>
+                    <p class="text-muted">Choose an email from the list to view its content</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Email Header -->
+            <div class="email-header bg-white border-bottom p-3">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="email-actions">
+                        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="GoBack">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Inbox
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="PreviousEmail" disabled="@(!hasPrevious)">
+                            <i class="fas fa-chevron-left"></i>
+                            Previous
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="NextEmail" disabled="@(!hasNext)">
+                            <i class="fas fa-chevron-right"></i>
+                            Next
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm me-2" @onclick="ReplyEmail">
+                            <i class="fas fa-reply"></i>
+                            Reply
+                        </button>
+                    </div>
+                </div>
+
+                <div class="email-subject mb-3">
+                    <h5 class="mb-0">@HtmlUtilityService.StripHtml(selectedEmail.Subject)</h5>
+                </div>
+
+                <!-- Dedicated Action Bar -->
+                <div class="email-actions-bar mb-3 d-flex justify-content-start gap-2">
+                    <button class="btn btn-outline-warning btn-sm" @onclick="ToggleImportant" title="@(selectedEmail.IsImportant ? "Remove from important" : "Mark as important")">
+                        <i class="fas fa-star @(selectedEmail.IsImportant ? "text-warning" : "")"></i>
+                        @(selectedEmail.IsImportant ? "Unstar" : "Star")
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="PrintEmail" title="Print email">
+                        <i class="fas fa-print"></i>
+                        Print
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="DeleteEmail" title="Delete email">
+                        <i class="fas fa-trash"></i>
+                        Delete
+                    </button>
+                </div>
+
+                <div class="email-details">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="sender-info">
+                            <strong>From:</strong>
+                            <span class="ms-2">@GetSenderName(selectedEmail.From) &lt;@GetSenderEmail(selectedEmail.From)&gt;</span>
+                        </div>
+                        <div class="email-date">
+                            <i class="fas fa-clock me-1"></i>
+                            @selectedEmail.DateReceived.ToString("MMM dd, yyyy 'at' HH:mm")
+                        </div>
+                    </div>
+
+                    <div class="collapse @(showEmailDetails ? "show" : "")" id="emailDetailsCollapse">
+                        <div class="additional-details">
+                            <div class="recipient-info mb-2">
+                                <strong>To:</strong>
+                                <span class="ms-2">@selectedEmail.To</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(selectedEmail.Cc))
+                            {
+                                <div class="cc-info mb-2">
+                                    <strong>Cc:</strong>
+                                    <span class="ms-2">@selectedEmail.Cc</span>
+                                </div>
+                            }
+                            @if (selectedEmail.HasAttachments && selectedEmail.Attachments.Any())
+                            {
+                                <div class="attachments-info mb-2">
+                                    <i class="fas fa-paperclip me-1"></i>
+                                    @selectedEmail.Attachments.Count attachment@(selectedEmail.Attachments.Count > 1 ? "s" : "")
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                            @onclick="ToggleEmailDetails"
+                            type="button">
+                        <i class="fas fa-chevron-@(showEmailDetails ? "up" : "down") me-1"></i>
+                        @(showEmailDetails ? "Hide" : "Show") details
+                    </button>
+                </div>
+
+                @if (userSettings != null && userSettings.EnableKeyboardNavigation)
+                {
+                    <div class="keyboard-shortcuts-hint text-muted small mt-2">
+                        <i class="fas fa-keyboard me-1"></i>
+                        Use <kbd>j</kbd>/<kbd>k</kbd> or <kbd>↓</kbd>/<kbd>↑</kbd> for next/previous
+                    </div>
+                }
+            </div>
+
+            <!-- Email Content -->
+            <div class="email-content flex-grow-1 d-flex flex-column" style="min-height: 0;">
+                <!-- Content type toggle for HTML emails -->
+                @if (!string.IsNullOrEmpty(selectedEmail.HtmlBody) && userSettings?.EnableHtmlParsing == false)
+                {
+                    <div class="email-content-controls bg-light border-bottom p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">HTML email - showing text version</small>
+                            <button class="btn btn-outline-primary btn-sm" @onclick="ToggleHtmlView">
+                                <i class="fas fa-@(showHtmlForThisEmail ? "file-alt" : "code")"></i>
+                                @(showHtmlForThisEmail ? "Show Text" : "Show HTML")
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="email-body p-4 flex-grow-1 overflow-auto">
+                    @{
+                        var hasHtmlContent = !string.IsNullOrEmpty(selectedEmail.HtmlBody);
+                        var hasTextContent = !string.IsNullOrEmpty(selectedEmail.TextBody);
+                        var shouldShowHtml = userSettings?.EnableHtmlParsing == true || showHtmlForThisEmail;
+                    }
+
+                    @if (hasHtmlContent || hasTextContent)
+                    {
+                        @if (hasHtmlContent && shouldShowHtml)
+                        {
+                            <div class="html-content">
+                                @((MarkupString)HtmlUtilityService.SanitizeHtml(selectedEmail.HtmlBody ?? ""))
+                            </div>
+                        }
+                        else if (hasHtmlContent)
+                        {
+                            <div class="text-content">
+                                @{
+                                    var convertedText = HtmlUtilityService.ConvertHtmlToText(selectedEmail.HtmlBody ?? "", true);
+                                    // Debug: Check if conversion resulted in empty content
+                                    if (string.IsNullOrWhiteSpace(convertedText))
+                                    {
+                                        convertedText = HtmlUtilityService.StripHtml(selectedEmail.HtmlBody ?? "");
+                                    }
+                                    // Final fallback if still empty
+                                    if (string.IsNullOrWhiteSpace(convertedText))
+                                    {
+                                        convertedText = "Email content could not be displayed in text format. Please enable HTML view.";
+                                    }
+                                }
+                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">@convertedText</pre>
+                            </div>
+                        }
+                        else if (hasTextContent)
+                        {
+                            <pre class="text-content" style="white-space: pre-wrap; font-family: inherit; margin: 0;">@selectedEmail.TextBody</pre>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">This email has no content.</p>
+                    }
+                </div>
+
+                <!-- Attachments -->
+                @if (selectedEmail.HasAttachments && selectedEmail.Attachments.Any())
+                {
+                    <div class="attachments-section bg-light border-top p-3">
+                        <h6 class="mb-3">
+                            <i class="fas fa-paperclip me-2"></i>
+                            Attachments (@selectedEmail.Attachments.Count)
+                        </h6>
+                        <div class="row">
+                            @foreach (var attachment in selectedEmail.Attachments)
+                            {
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="attachment-item d-flex align-items-center p-2 border rounded">
+                                        <div class="attachment-icon me-2">
+                                            <i class="fas @GetFileIcon(attachment.ContentType) fa-2x text-primary"></i>
+                                        </div>
+                                        <div class="attachment-info flex-grow-1">
+                                            <div class="attachment-name small fw-bold">@attachment.FileName</div>
+                                            <div class="attachment-size text-muted small">@FormatFileSize(attachment.Size)</div>
+                                        </div>
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => DownloadAttachment(attachment)">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+
+</div>
+
+@code {
+    [Parameter] public int EmailId { get; set; }
+
+    private EmailMessage? selectedEmail;
+    private List<EmailMessage> emails = new();
+    private bool isLoadingEmail = true;
+    private bool isLoadingEmails = true;
+    private List<int> emailIds = new();
+    private int currentIndex = -1;
+    private bool hasPrevious => currentIndex > 0;
+    private bool hasNext => currentIndex >= 0 && currentIndex < emailIds.Count - 1;
+    private DotNetObjectReference<EmailSplitRight>? objRef;
+    private UserSettings? userSettings;
+    private bool showEmailDetails = false;
+    private bool showHtmlForThisEmail = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        objRef = DotNetObjectReference.Create(this);
+        userSettings = await UserSettingsService.GetUserSettingsAsync();
+        await LoadEmails();
+        await LoadEmail();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (EmailId > 0)
+        {
+            currentIndex = emailIds.IndexOf(EmailId);
+            if (currentIndex == -1)
+            {
+                await LoadEmails();
+            }
+            await LoadEmail();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && userSettings != null && userSettings.EnableKeyboardNavigation)
+        {
+            await SetupKeyboardNavigation();
+        }
+    }
+
+    private async Task LoadEmails()
+    {
+        isLoadingEmails = true;
+        try
+        {
+            var account = await AccountService.GetDefaultAccountAsync();
+            if (account != null)
+            {
+                emails = await EmailService.GetEmailsAsync(account, "INBOX", userSettings?.EmailsPerPage ?? 50);
+                emailIds = emails.Select(e => e.Id).ToList();
+                currentIndex = emailIds.IndexOf(EmailId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading emails: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingEmails = false;
+        }
+    }
+
+    private async Task LoadEmail()
+    {
+        if (EmailId <= 0) return;
+
+        isLoadingEmail = true;
+        try
+        {
+            selectedEmail = await EmailService.GetEmailByIdAsync(EmailId);
+            if (userSettings?.MarkAsReadOnOpen == true && selectedEmail is { IsRead: false })
+            {
+                await EmailService.MarkAsReadAsync(EmailId);
+                selectedEmail.IsRead = true;
+
+                // Update in the list as well
+                var emailInList = emails.FirstOrDefault(e => e.Id == EmailId);
+                if (emailInList != null)
+                {
+                    emailInList.IsRead = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading email: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingEmail = false;
+        }
+    }
+
+    private void SelectEmail(int emailId)
+    {
+        try
+        {
+            Navigation.NavigateTo($"/email-split-right/{emailId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error selecting email: {ex.Message}");
+        }
+    }
+
+    private async Task SetupKeyboardNavigation()
+    {
+        await JSRuntime.InvokeVoidAsync("setupEmailKeyboardNavigation", objRef);
+    }
+
+    private void GoBack()
+    {
+        try
+        {
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error navigating back: {ex.Message}");
+        }
+    }
+
+    private void PreviousEmail()
+    {
+        if (hasPrevious)
+        {
+            var previousId = emailIds[currentIndex - 1];
+            try
+            {
+                Navigation.NavigateTo($"/email-split-right/{previousId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error navigating to previous email: {ex.Message}");
+            }
+        }
+    }
+
+    private void NextEmail()
+    {
+        if (hasNext)
+        {
+            var nextId = emailIds[currentIndex + 1];
+            try
+            {
+                Navigation.NavigateTo($"/email-split-right/{nextId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error navigating to next email: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void HandleKeyPress(string key)
+    {
+        switch (key.ToLower())
+        {
+            case "j":
+            case "arrowdown":
+                NextEmail();
+                break;
+            case "k":
+            case "arrowup":
+                PreviousEmail();
+                break;
+            case "arrowleft":
+                PreviousEmail();
+                break;
+            case "arrowright":
+                NextEmail();
+                break;
+            case "escape":
+                GoBack();
+                break;
+        }
+    }
+
+    private void ReplyEmail()
+    {
+        if (selectedEmail != null)
+        {
+            var replySubject = selectedEmail.Subject.StartsWith("Re: ") ? selectedEmail.Subject : $"Re: {selectedEmail.Subject}";
+            try
+            {
+                Navigation.NavigateTo($"/compose?reply={EmailId}&subject={Uri.EscapeDataString(replySubject)}&to={Uri.EscapeDataString(GetSenderEmail(selectedEmail.From))}");
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignore navigation cancellation exceptions
+            }
+        }
+    }
+
+    private void ToggleImportant()
+    {
+        if (selectedEmail != null)
+        {
+            selectedEmail.IsImportant = !selectedEmail.IsImportant;
+            // TODO: Update in database
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteEmail()
+    {
+        if (selectedEmail != null)
+        {
+            await EmailService.DeleteEmailAsync(selectedEmail.Id);
+            emails.RemoveAll(e => e.Id == selectedEmail.Id);
+            emailIds.Remove(selectedEmail.Id);
+
+            if (emails.Any())
+            {
+                var nextEmailId = emails.First().Id;
+                Navigation.NavigateTo($"/email-split-left/{nextEmailId}");
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+    }
+
+    private async Task DownloadAttachment(EmailAttachment attachment)
+    {
+        if (attachment.Content != null)
+        {
+            await JSRuntime.InvokeVoidAsync("downloadFile", attachment.FileName, attachment.ContentType, attachment.Content);
+        }
+    }
+
+    private string GetSenderName(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "Unknown";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"^(.+?)\s*<");
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim('"');
+        }
+
+        return from.Split('@')[0];
+    }
+
+    private string GetSenderEmail(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"<(.+?)>");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        return from;
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        var now = DateTime.Now;
+        var diff = now - date;
+
+        if (diff.TotalDays < 1)
+        {
+            return date.ToString("HH:mm");
+        }
+        else if (diff.TotalDays < 7)
+        {
+            return date.ToString("ddd");
+        }
+        else if (date.Year == now.Year)
+        {
+            return date.ToString("MMM dd");
+        }
+        else
+        {
+            return date.ToString("MMM dd, yyyy");
+        }
+    }
+
+    private string GetEmailPreview(EmailMessage email)
+    {
+        var content = !string.IsNullOrEmpty(email.TextBody) ? email.TextBody : email.HtmlBody;
+        if (string.IsNullOrEmpty(content)) return "";
+
+        var preview = System.Text.RegularExpressions.Regex.Replace(content, "<.*?>", "");
+        if (preview.Length > 80)
+        {
+            preview = preview.Substring(0, 80) + "...";
+        }
+
+        return preview;
+    }
+
+
+
+    private string GetFileIcon(string contentType)
+    {
+        if (string.IsNullOrEmpty(contentType)) return "fa-file";
+
+        return contentType.ToLower() switch
+        {
+            var type when type.StartsWith("image/") => "fa-file-image",
+            var type when type.StartsWith("video/") => "fa-file-video",
+            var type when type.StartsWith("audio/") => "fa-file-audio",
+            "application/pdf" => "fa-file-pdf",
+            var type when type.Contains("word") => "fa-file-word",
+            var type when type.Contains("excel") || type.Contains("spreadsheet") => "fa-file-excel",
+            var type when type.Contains("powerpoint") || type.Contains("presentation") => "fa-file-powerpoint",
+            var type when type.Contains("zip") || type.Contains("compressed") => "fa-file-archive",
+            _ => "fa-file"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024 * 1024):F1} MB";
+        return $"{bytes / (1024 * 1024 * 1024):F1} GB";
+    }
+
+    private void ToggleEmailDetails()
+    {
+        showEmailDetails = !showEmailDetails;
+    }
+
+    private void ToggleHtmlView()
+    {
+        showHtmlForThisEmail = !showHtmlForThisEmail;
+    }
+
+    private async Task PrintEmail()
+    {
+        if (selectedEmail != null)
+        {
+            try
+            {
+                var printContent = "";
+                var isHtml = false;
+
+                // Determine what content to print based on user settings
+                var hasHtmlContent = !string.IsNullOrEmpty(selectedEmail.HtmlBody);
+                var hasTextContent = !string.IsNullOrEmpty(selectedEmail.TextBody);
+                var shouldShowHtml = userSettings?.EnableHtmlParsing == true || showHtmlForThisEmail;
+
+                if (hasHtmlContent && shouldShowHtml)
+                {
+                    // User wants HTML and we have HTML content
+                    printContent = selectedEmail.HtmlBody;
+                    isHtml = true;
+                }
+                else if (hasHtmlContent && !shouldShowHtml)
+                {
+                    // User wants text but we have HTML - convert it
+                    printContent = HtmlUtilityService.ConvertHtmlToText(selectedEmail.HtmlBody ?? "", true);
+                    if (string.IsNullOrWhiteSpace(printContent))
+                    {
+                        printContent = HtmlUtilityService.StripHtml(selectedEmail.HtmlBody ?? "");
+                    }
+                    isHtml = false;
+                }
+                else if (hasTextContent)
+                {
+                    // We have text content
+                    printContent = selectedEmail.TextBody;
+                    isHtml = false;
+                }
+                else
+                {
+                    // No content available
+                    printContent = "This email has no content to display.";
+                    isHtml = false;
+                }
+
+                await JSRuntime.InvokeVoidAsync("printEmailContent",
+                    selectedEmail.Subject ?? "No Subject",
+                    printContent ?? "",
+                    isHtml,
+                    selectedEmail.From ?? "Unknown Sender",
+                    selectedEmail.To ?? "Unknown Recipient",
+                    selectedEmail.DateReceived.ToString("MMM dd, yyyy 'at' HH:mm"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error printing email: {ex.Message}");
+                // TODO: Show user-friendly error message
+            }
+        }
+    }
+
+
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+    }
+}

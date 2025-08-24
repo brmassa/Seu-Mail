@@ -1,0 +1,572 @@
+@page "/unified"
+@inject IEmailService EmailService
+@inject IAccountService AccountService
+@inject IUserSettingsService UserSettingsService
+@inject IHtmlUtilityService HtmlUtilityService
+@inject NavigationManager Navigation
+
+<PageTitle>All Accounts - Seu Email</PageTitle>
+
+<div class="unified-inbox-container h-100">
+    <div class="unified-inbox-header bg-white border-bottom p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">
+                    <i class="fas fa-layer-group me-2 text-primary"></i>
+                    All Accounts
+                    @if (allEmails.Any())
+                    {
+                        <span class="badge bg-secondary ms-2">@allEmails.Count</span>
+                    }
+                </h4>
+                <p class="text-muted mb-0 small">Unified view of all your email accounts</p>
+            </div>
+            <div class="unified-actions">
+                <button class="btn btn-outline-primary btn-sm me-2" @onclick="RefreshAll">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Sync All
+                </button>
+                <button class="btn btn-outline-secondary btn-sm me-2" @onclick="SelectAll">
+                    <i class="fas fa-check-square"></i>
+                    Select All
+                </button>
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected" disabled="@(!selectedEmails.Any())">
+                    <i class="fas fa-trash"></i>
+                    Delete (@selectedEmails.Count)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Filter Pills -->
+    <div class="account-filter-section bg-light border-bottom p-2">
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn @(selectedAccountId == 0 ? "btn-primary" : "btn-outline-primary") btn-sm"
+                    @onclick="() => FilterByAccount(0)">
+                <i class="fas fa-layer-group me-1"></i>
+                All Accounts (@GetTotalEmailCount())
+            </button>
+            @foreach (var account in accounts)
+            {
+                <button class="btn @(selectedAccountId == account.Id ? "btn-primary" : "btn-outline-primary") btn-sm"
+                        @onclick="() => FilterByAccount(account.Id)">
+                    <i class="fas fa-user me-1"></i>
+                    @account.GetDisplayName() (@GetAccountEmailCount(account.Id))
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="unified-inbox-content flex-grow-1 overflow-auto">
+        @if (isLoading)
+        {
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading emails from all accounts...</p>
+            </div>
+        }
+        else if (!filteredEmails.Any())
+        {
+            <div class="empty-state text-center p-5">
+                <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">
+                    @if (selectedAccountId == 0)
+                    {
+                        <text>No emails found</text>
+                    }
+                    else
+                    {
+                        <text>No emails in selected account</text>
+                    }
+                </h5>
+                <p class="text-muted">
+                    @if (accounts.Count == 0)
+                    {
+                        <text>Add an email account to get started</text>
+                    }
+                    else
+                    {
+                        <text>Try syncing your accounts or check your filters</text>
+                    }
+                </p>
+                @if (accounts.Count == 0)
+                {
+                    <a href="/accounts" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-2"></i>
+                        Add Email Account
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="unified-email-list">
+                @foreach (var emailGroup in GetGroupedEmails())
+                {
+                    <!-- Date Group Header -->
+                    @if (emailGroup.Key != lastDateGroup)
+                    {
+                        <div class="date-group-header sticky-top bg-light border-bottom px-3 py-2">
+                            <h6 class="mb-0 text-muted">
+                                <i class="fas fa-calendar-day me-2"></i>
+                                @FormatDateGroup(emailGroup.Key)
+                            </h6>
+                        </div>
+                        lastDateGroup = emailGroup.Key;
+                    }
+
+                    @foreach (var email in emailGroup.OrderByDescending(e => e.DateReceived))
+                    {
+                        <div class="unified-email-item @(email.IsRead ? "read" : "unread") @(selectedEmails.Contains(email.Id) ? "selected" : "") @(userSettings.UseCompactMode ? "compact" : "")"
+                             @onclick="() => SelectEmail(email.Id)">
+                            <div class="email-checkbox">
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@selectedEmails.Contains(email.Id)"
+                                       @onchange="(e) => ToggleEmailSelection(email.Id, (bool)e.Value!)"
+                                       @onclick:stopPropagation="true">
+                            </div>
+
+                            <!-- Account Badge -->
+                            <div class="account-badge me-3">
+                                <span class="badge rounded-pill" style="background-color: @GetAccountColor(email.AccountId)">
+                                    @GetAccountInitials(email.AccountId)
+                                </span>
+                            </div>
+
+                            <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email)" @onclick:stopPropagation="true">
+                                <div class="email-header d-flex justify-content-between align-items-start">
+                                    <div class="email-sender">
+                                        @if (userSettings.EmailDisplayMode == EmailDisplayMode.TitleSender || userSettings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)
+                                        {
+                                            <strong class="sender-name">@GetSenderName(email.From)</strong>
+                                            <span class="sender-email text-muted ms-1">@GetSenderEmail(email.From)</span>
+                                        }
+                                    </div>
+                                    <div class="email-meta text-muted d-flex align-items-center gap-2">
+                                        <span class="account-name small">@GetAccountName(email.AccountId)</span>
+                                        <span class="email-date">@FormatTime(email.DateReceived)</span>
+                                        @if (email.HasAttachments)
+                                        {
+                                            <i class="fas fa-paperclip"></i>
+                                        }
+                                        @if (email.IsImportant)
+                                        {
+                                            <i class="fas fa-star text-warning"></i>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="email-subject @(userSettings.UseCompactMode ? "mb-1" : "")">
+                                    @HtmlUtilityService.StripHtml(email.Subject)
+                                </div>
+
+                                @if (userSettings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview && userSettings.ShowEmailPreview)
+                                {
+                                    <div class="email-preview text-muted @(userSettings.UseCompactMode ? "small" : "")">
+                                        @GetEmailPreview(email)
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="email-actions">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleImportant(email)" @onclick:stopPropagation="true" title="@(email.IsImportant ? "Remove star" : "Add star")">
+                                    <i class="fas fa-star @(email.IsImportant ? "text-warning" : "")"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSingleEmail(email)" @onclick:stopPropagation="true" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (hasMoreEmails)
+            {
+                <div class="load-more-container p-3 text-center">
+                    <button class="btn btn-outline-primary" @onclick="LoadMoreEmails" disabled="@isLoadingMore">
+                        @if (isLoadingMore)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Load More
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<EmailAccount> accounts = new();
+    private List<EmailMessage> allEmails = new();
+    private List<EmailMessage> filteredEmails = new();
+    private HashSet<int> selectedEmails = new();
+    private bool isLoading = true;
+    private bool isLoadingMore = false;
+    private bool hasMoreEmails = true;
+    private int selectedAccountId = 0; // 0 means all accounts
+    private UserSettings userSettings = new();
+    private string lastDateGroup = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        userSettings = await UserSettingsService.GetUserSettingsAsync();
+        await LoadAccounts();
+        await LoadAllEmails();
+    }
+
+    private async Task LoadAccounts()
+    {
+        try
+        {
+            accounts = await AccountService.GetAllAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading accounts: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAllEmails()
+    {
+        isLoading = true;
+        allEmails.Clear();
+
+        try
+        {
+            var emailTasks = accounts.Select(async account =>
+            {
+                try
+                {
+                    var emails = await EmailService.GetEmailsAsync(account, "INBOX", userSettings.EmailsPerPage);
+                    return emails;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading emails for account {account.Email}: {ex.Message}");
+                    return new List<EmailMessage>();
+                }
+            });
+
+            var results = await Task.WhenAll(emailTasks);
+
+            foreach (var emailList in results)
+            {
+                allEmails.AddRange(emailList);
+            }
+
+            // Sort by date received, newest first
+            allEmails = allEmails.OrderByDescending(e => e.DateReceived).ToList();
+
+            FilterEmails();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading unified emails: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void FilterEmails()
+    {
+        if (selectedAccountId == 0)
+        {
+            filteredEmails = allEmails.ToList();
+        }
+        else
+        {
+            filteredEmails = allEmails.Where(e => e.AccountId == selectedAccountId).ToList();
+        }
+    }
+
+    private void FilterByAccount(int accountId)
+    {
+        selectedAccountId = accountId;
+        selectedEmails.Clear();
+        FilterEmails();
+        StateHasChanged();
+    }
+
+    private async Task RefreshAll()
+    {
+        isLoading = true;
+        try
+        {
+            var syncTasks = accounts.Select(account => EmailService.SyncEmailsAsync(account));
+            await Task.WhenAll(syncTasks);
+            await LoadAllEmails();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error syncing all accounts: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectEmail(int emailId)
+    {
+        if (selectedEmails.Contains(emailId))
+        {
+            selectedEmails.Remove(emailId);
+        }
+        else
+        {
+            selectedEmails.Add(emailId);
+        }
+    }
+
+    private void ToggleEmailSelection(int emailId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            selectedEmails.Add(emailId);
+        }
+        else
+        {
+            selectedEmails.Remove(emailId);
+        }
+    }
+
+    private void SelectAll()
+    {
+        if (selectedEmails.Count == filteredEmails.Count)
+        {
+            selectedEmails.Clear();
+        }
+        else
+        {
+            selectedEmails = filteredEmails.Select(e => e.Id).ToHashSet();
+        }
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (!selectedEmails.Any()) return;
+
+        try
+        {
+            foreach (var emailId in selectedEmails)
+            {
+                await EmailService.DeleteEmailAsync(emailId);
+            }
+
+            allEmails.RemoveAll(e => selectedEmails.Contains(e.Id));
+            FilterEmails();
+            selectedEmails.Clear();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting selected emails: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteSingleEmail(EmailMessage email)
+    {
+        try
+        {
+            await EmailService.DeleteEmailAsync(email.Id);
+            allEmails.Remove(email);
+            FilterEmails();
+            selectedEmails.Remove(email.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting email: {ex.Message}");
+        }
+    }
+
+    private void ToggleImportant(EmailMessage email)
+    {
+        email.IsImportant = !email.IsImportant;
+        // TODO: Update in database
+        StateHasChanged();
+    }
+
+    private async Task LoadMoreEmails()
+    {
+        // TODO: Implement pagination for unified inbox
+        isLoadingMore = true;
+        await Task.Delay(1000); // Placeholder
+        isLoadingMore = false;
+        hasMoreEmails = false;
+    }
+
+    private void ViewEmail(EmailMessage email)
+    {
+        if (userSettings.MarkAsReadOnOpen && !email.IsRead)
+        {
+            email.IsRead = true;
+            EmailService.MarkAsReadAsync(email.Id);
+        }
+
+        // Navigate based on user's layout preference
+        switch (userSettings.EmailLayoutMode)
+        {
+            case EmailLayoutMode.SeparatePage:
+                Navigation.NavigateTo($"/email/{email.Id}");
+                break;
+            case EmailLayoutMode.SplitRight:
+                Navigation.NavigateTo($"/email-split-right/{email.Id}");
+                break;
+            case EmailLayoutMode.SplitBottom:
+                Navigation.NavigateTo($"/email-split-bottom/{email.Id}");
+                break;
+            default:
+                Navigation.NavigateTo($"/email/{email.Id}");
+                break;
+        }
+    }
+
+    private IGrouping<string, EmailMessage>[] GetGroupedEmails()
+    {
+        return filteredEmails
+            .GroupBy(e => e.DateReceived.Date.ToString("yyyy-MM-dd"))
+            .OrderByDescending(g => g.Key)
+            .ToArray();
+    }
+
+    private string FormatDateGroup(string dateKey)
+    {
+        if (DateTime.TryParse(dateKey, out var date))
+        {
+            var now = DateTime.Now.Date;
+            var diff = (now - date).TotalDays;
+
+            if (date == now)
+                return "Today";
+            else if (date == now.AddDays(-1))
+                return "Yesterday";
+            else if (diff < 7)
+                return date.ToString("dddd, MMM dd");
+            else if (date.Year == now.Year)
+                return date.ToString("MMMM dd");
+            else
+                return date.ToString("MMMM dd, yyyy");
+        }
+        return dateKey;
+    }
+
+    private string FormatTime(DateTime dateTime)
+    {
+        var now = DateTime.Now;
+        var diff = (now - dateTime).TotalDays;
+
+        if (diff < 1)
+        {
+            return dateTime.ToString("HH:mm");
+        }
+        else if (diff < 7)
+        {
+            return dateTime.ToString("ddd HH:mm");
+        }
+        else if (dateTime.Year == now.Year)
+        {
+            return dateTime.ToString("MMM dd");
+        }
+        else
+        {
+            return dateTime.ToString("MM/dd/yy");
+        }
+    }
+
+    private int GetTotalEmailCount()
+    {
+        return allEmails.Count;
+    }
+
+    private int GetAccountEmailCount(int accountId)
+    {
+        return allEmails.Count(e => e.AccountId == accountId);
+    }
+
+    private string GetAccountColor(int accountId)
+    {
+        // Generate a color based on account ID
+        var colors = new[] { "#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6f42c1", "#fd7e14", "#20c997" };
+        return colors[accountId % colors.Length];
+    }
+
+    private string GetAccountInitials(int accountId)
+    {
+        var account = accounts.FirstOrDefault(a => a.Id == accountId);
+        if (account == null) return "?";
+
+        var displayName = account.GetDisplayName();
+        if (displayName.Contains("@"))
+        {
+            return displayName.Substring(0, Math.Min(2, displayName.Length)).ToUpper();
+        }
+
+        var words = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2)
+        {
+            return $"{words[0][0]}{words[1][0]}".ToUpper();
+        }
+        else if (words.Length == 1)
+        {
+            return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
+        }
+
+        return "UN";
+    }
+
+    private string GetAccountName(int accountId)
+    {
+        var account = accounts.FirstOrDefault(a => a.Id == accountId);
+        return account?.GetDisplayName() ?? "Unknown Account";
+    }
+
+    private string GetSenderName(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "Unknown";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"^(.+?)\s*<");
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim('"');
+        }
+
+        return from.Split('@')[0];
+    }
+
+    private string GetSenderEmail(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"<(.+?)>");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        return from;
+    }
+
+    private string GetEmailPreview(EmailMessage email)
+    {
+        var content = !string.IsNullOrEmpty(email.TextBody) ? email.TextBody : email.HtmlBody;
+        if (string.IsNullOrEmpty(content)) return "";
+
+        // Remove HTML tags if present
+        var preview = System.Text.RegularExpressions.Regex.Replace(content, "<.*?>", "");
+
+        // Limit to 100 characters
+        if (preview.Length > 100)
+        {
+            preview = preview.Substring(0, 100) + "...";
+        }
+
+        return preview;
+    }
+
+
+}

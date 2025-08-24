@@ -1,0 +1,315 @@
+@using Seu.Mail.Core.Models.Calendar
+
+@*
+/// <summary>
+/// Week view component for displaying calendar events in a weekly grid format.
+/// Shows 7 days with hourly time slots and supports event interaction.
+/// </summary>
+*@
+
+<div class="week-view">
+    <div class="week-header">
+        <div class="time-column"></div>
+        @foreach (var day in GetWeekDays())
+        {
+            <div class="day-column">
+                <div class="day-name">@day.ToString("ddd")</div>
+                <div class="day-number @(day.Date == DateTime.Today ? "today" : "")">@day.Day</div>
+            </div>
+        }
+    </div>
+
+    <div class="week-body">
+        <div class="time-column">
+            @for (int hour = StartHour; hour <= EndHour; hour++)
+            {
+                <div class="time-slot">
+                    <span class="time-label">@hour.ToString("00"):00</span>
+                </div>
+            }
+        </div>
+
+        @foreach (var day in GetWeekDays())
+        {
+            <div class="day-column" @onclick="() => OnDayClick(day)">
+                @for (int hour = StartHour; hour <= EndHour; hour++)
+                {
+                    <div class="time-slot" @onclick="() => HandleTimeSlotClick(day.Date.AddHours(hour))" @onclick:stopPropagation="true">
+                        @foreach (var evt in GetEventsForTimeSlot(day, hour))
+                        {
+                            <div class="event-item" style="background-color: @evt.Color; height: @GetEventHeight(evt)px; top: @GetEventTop(evt)px"
+                                 @onclick="() => HandleEventClick(evt)" @onclick:stopPropagation="true">
+                                <div class="event-title">@evt.Title</div>
+                                <div class="event-time">@evt.StartDateTime.ToString("HH:mm") - @evt.EndDateTime.ToString("HH:mm")</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Gets or sets the list of calendar events to display in the week view.
+    /// </summary>
+    [Parameter] public List<CalendarEvent>? Events { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current date that determines which week to display.
+    /// </summary>
+    [Parameter] public DateTime CurrentDate { get; set; } = DateTime.Today;
+
+    /// <summary>
+    /// Gets or sets the calendar settings that control view behavior.
+    /// </summary>
+    [Parameter] public CalendarSettings? Settings { get; set; }
+
+    /// <summary>
+    /// Event callback triggered when an event is clicked.
+    /// </summary>
+    [Parameter] public EventCallback<CalendarEvent> OnEventClick { get; set; }
+
+    /// <summary>
+    /// Event callback triggered when a time slot is clicked.
+    /// </summary>
+    [Parameter] public EventCallback<DateTime> OnTimeSlotClick { get; set; }
+
+    /// <summary>
+    /// Event callback triggered when an event is dropped to a new time.
+    /// </summary>
+    [Parameter] public EventCallback<(CalendarEvent, DateTime)> OnEventDrop { get; set; }
+
+    /// <summary>
+    /// Gets the starting hour for the day view from settings or default value.
+    /// </summary>
+    private int StartHour => Settings?.DayViewStartHour ?? 6;
+
+    /// <summary>
+    /// Gets the ending hour for the day view from settings or default value.
+    /// </summary>
+    private int EndHour => Settings?.DayViewEndHour ?? 22;
+
+    /// <summary>
+    /// Gets the list of days for the current week based on the current date and first day of week setting.
+    /// </summary>
+    /// <returns>A list of DateTime objects representing the 7 days of the week.</returns>
+    private List<DateTime> GetWeekDays()
+    {
+        var firstDay = Settings?.FirstDayOfWeek ?? DayOfWeek.Monday;
+        var startOfWeek = CurrentDate.Date;
+
+        while (startOfWeek.DayOfWeek != firstDay)
+        {
+            startOfWeek = startOfWeek.AddDays(-1);
+        }
+
+        var days = new List<DateTime>();
+        for (int i = 0; i < 7; i++)
+        {
+            days.Add(startOfWeek.AddDays(i));
+        }
+
+        return days;
+    }
+
+    /// <summary>
+    /// Gets the events that occur within a specific time slot.
+    /// </summary>
+    /// <param name="day">The day to check for events.</param>
+    /// <param name="hour">The hour of the time slot.</param>
+    /// <returns>A list of calendar events that overlap with the specified time slot.</returns>
+    private List<CalendarEvent> GetEventsForTimeSlot(DateTime day, int hour)
+    {
+        if (Events == null) return new List<CalendarEvent>();
+
+        var slotStart = day.Date.AddHours(hour);
+        var slotEnd = slotStart.AddHours(1);
+
+        return Events.Where(e =>
+            e.StartDateTime.Date == day.Date &&
+            e.StartDateTime < slotEnd &&
+            e.EndDateTime > slotStart &&
+            !e.IsAllDay)
+            .OrderBy(e => e.StartDateTime)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Calculates the height of an event based on its duration.
+    /// </summary>
+    /// <param name="evt">The calendar event to calculate height for.</param>
+    /// <returns>The height in pixels for the event display.</returns>
+    private int GetEventHeight(CalendarEvent evt)
+    {
+        var duration = evt.EndDateTime - evt.StartDateTime;
+        return Math.Max(20, (int)(duration.TotalMinutes));
+    }
+
+    /// <summary>
+    /// Calculates the top position offset for an event within its time slot.
+    /// </summary>
+    /// <param name="evt">The calendar event to calculate position for.</param>
+    /// <returns>The top offset in pixels.</returns>
+    private int GetEventTop(CalendarEvent evt)
+    {
+        var minutesFromHourStart = evt.StartDateTime.Minute;
+        return minutesFromHourStart;
+    }
+
+    /// <summary>
+    /// Handles day click events. Currently a placeholder for future implementation.
+    /// </summary>
+    /// <param name="day">The clicked day.</param>
+    private void OnDayClick(DateTime day)
+    {
+        // Navigate to day view or handle day click
+        // Implementation can be added here when needed
+    }
+
+    /// <summary>
+    /// Handles time slot click events and invokes the corresponding callback.
+    /// </summary>
+    /// <param name="dateTime">The DateTime of the clicked time slot.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task HandleTimeSlotClick(DateTime dateTime)
+    {
+        await OnTimeSlotClick.InvokeAsync(dateTime);
+    }
+
+    /// <summary>
+    /// Handles event click events and invokes the corresponding callback.
+    /// </summary>
+    /// <param name="evt">The clicked calendar event.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task HandleEventClick(CalendarEvent evt)
+    {
+        await OnEventClick.InvokeAsync(evt);
+    }
+}
+
+<style>
+.week-view {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.week-header {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.time-column {
+    border-right: 1px solid #dee2e6;
+}
+
+.day-column {
+    text-align: center;
+    padding: 0.5rem;
+    border-right: 1px solid #dee2e6;
+    position: relative;
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+.day-name {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.day-number {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.day-number.today {
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.25rem auto 0;
+}
+
+.week-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    overflow-y: auto;
+}
+
+.week-body .time-column {
+    background-color: #f8f9fa;
+}
+
+.time-slot {
+    height: 60px;
+    border-bottom: 1px solid #e9ecef;
+    position: relative;
+    cursor: pointer;
+}
+
+.time-slot:hover {
+    background-color: #f8f9fa;
+}
+
+.time-label {
+    position: absolute;
+    top: -8px;
+    left: 0.5rem;
+    font-size: 0.75rem;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    padding: 0 0.25rem;
+}
+
+.week-body .day-column {
+    border-right: 1px solid #dee2e6;
+    padding: 0;
+}
+
+.week-body .day-column .time-slot {
+    border-right: none;
+}
+
+.event-item {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.event-item:hover {
+    opacity: 0.8;
+}
+
+.event-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.event-time {
+    font-size: 0.6rem;
+    opacity: 0.9;
+}
+</style>

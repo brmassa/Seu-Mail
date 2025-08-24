@@ -1,0 +1,741 @@
+@inject ICalendarService CalendarService
+@inject IAccountService AccountService
+@inject IJSRuntime JSRuntime
+
+<div class="import-export-component">
+    <!-- Import Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-file-import me-2"></i>
+                Import Calendar
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Import Format</label>
+                <select @bind="ImportFormat" class="form-select">
+                    <option value="ics">iCalendar (.ics)</option>
+                    <option value="csv">CSV (.csv)</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="importFile" class="form-label">Select File</label>
+                <InputFile OnChange="HandleFileSelected" class="form-control" id="importFile" accept=".ics,.csv" />
+                <div class="form-text">
+                    Supported formats: iCalendar (.ics), CSV (.csv). Maximum file size: 10MB.
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ImportPreview))
+            {
+                <div class="mb-3">
+                    <label class="form-label">Import Preview</label>
+                    <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                        <pre class="mb-0">@ImportPreview</pre>
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" @onclick="ImportCalendar" disabled="@(SelectedFile == null || IsImporting)">
+                    @if (IsImporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    <i class="fas fa-upload me-2"></i>
+                    Import Calendar
+                </button>
+
+                <button type="button" class="btn btn-secondary" @onclick="ClearImport" disabled="@IsImporting">
+                    <i class="fas fa-times me-2"></i>
+                    Clear
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ImportMessage))
+            {
+                <div class="alert @(ImportSuccess ? "alert-success" : "alert-danger") mt-3" role="alert">
+                    <i class="fas @(ImportSuccess ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
+                    @ImportMessage
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-file-export me-2"></i>
+                Export Calendar
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <select @bind="ExportFormat" class="form-select">
+                            <option value="ics">iCalendar (.ics)</option>
+                            <option value="csv">CSV (.csv)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <select @onchange="OnExportRangeChanged" class="form-select">
+                            <option value="month">Current Month</option>
+                            <option value="quarter">Current Quarter</option>
+                            <option value="year">Current Year</option>
+                            <option value="all">All Events</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            @if (ExportRange == "custom")
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <InputDate @bind-Value="CustomStartDate" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <InputDate @bind-Value="CustomEndDate" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" @bind="IncludeRecurring" id="includeRecurring">
+                    <label class="form-check-label" for="includeRecurring">
+                        Include recurring event instances
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" @bind="IncludeReminders" id="includeReminders">
+                    <label class="form-check-label" for="includeReminders">
+                        Include event reminders
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" @bind="IncludeAttendees" id="includeAttendees">
+                    <label class="form-check-label" for="includeAttendees">
+                        Include event attendees
+                    </label>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-success" @onclick="ExportCalendar" disabled="@IsExporting">
+                    @if (IsExporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    <i class="fas fa-download me-2"></i>
+                    Export Calendar
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ExportMessage))
+            {
+                <div class="alert @(ExportSuccess ? "alert-success" : "alert-danger") mt-3" role="alert">
+                    <i class="fas @(ExportSuccess ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
+                    @ExportMessage
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Subscription Management Section -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-rss me-2"></i>
+                Calendar Subscriptions
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Subscriptions?.Any() == true)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>URL</th>
+                                <th>Status</th>
+                                <th>Last Sync</th>
+                                <th>Events</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var subscription in Subscriptions)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-indicator me-2" style="background-color: @subscription.Color"></div>
+                                            @subscription.Name
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@(subscription.Url.Length > 50 ? subscription.Url[..50] + "..." : subscription.Url)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(subscription.LastSyncStatus)">
+                                            @subscription.LastSyncStatus
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (subscription.LastSyncAt.HasValue)
+                                        {
+                                            <small>@subscription.LastSyncAt.Value.ToString("MMM d, HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Never</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@subscription.EventCount</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" @onclick="() => SyncSubscription(subscription.Id)">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" @onclick="() => EditSubscription(subscription)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" @onclick="() => DeleteSubscription(subscription.Id)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-rss fa-3x mb-3"></i>
+                    <p>No calendar subscriptions found.</p>
+                </div>
+            }
+
+            <button type="button" class="btn btn-outline-primary" @onclick="ShowAddSubscription">
+                <i class="fas fa-plus me-2"></i>
+                Add Subscription
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Subscription Modal -->
+@if (ShowSubscriptionModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingSubscription?.Id == 0 ? "Add" : "Edit") Subscription</h5>
+                    <button type="button" class="btn-close" @onclick="CloseSubscriptionModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (EditingSubscription != null)
+                    {
+                        <EditForm Model="EditingSubscription" OnValidSubmit="SaveSubscription">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="mb-3">
+                                <label class="form-label">Name *</label>
+                                <InputText @bind-Value="EditingSubscription.Name" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Calendar URL *</label>
+                                <InputText @bind-Value="EditingSubscription.Url" class="form-control" placeholder="https://example.com/calendar.ics" />
+                                <div class="form-text">Enter the URL of an iCalendar (.ics) feed</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Color</label>
+                                        <InputText @bind-Value="EditingSubscription.Color" class="form-control" type="color" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Sync Interval</label>
+                                        <InputSelect @bind-Value="EditingSubscription.SyncIntervalMinutes" class="form-select">
+                                            <option value="15">Every 15 minutes</option>
+                                            <option value="30">Every 30 minutes</option>
+                                            <option value="60">Every hour</option>
+                                            <option value="360">Every 6 hours</option>
+                                            <option value="1440">Daily</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="EditingSubscription.IsActive" class="form-check-input" id="isActive" />
+                                    <label class="form-check-label" for="isActive">
+                                        Active
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="EditingSubscription.AutoSync" class="form-check-input" id="autoSync" />
+                                    <label class="form-check-label" for="autoSync">
+                                        Auto-sync
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseSubscriptionModal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback OnDataChanged { get; set; }
+
+    private EmailAccount? CurrentAccount { get; set; }
+    private List<CalendarSubscription>? Subscriptions { get; set; }
+
+    // Import properties
+    private IBrowserFile? SelectedFile { get; set; }
+    private string ImportFormat { get; set; } = "ics";
+    private string ImportPreview { get; set; } = string.Empty;
+    private bool IsImporting { get; set; }
+    private string ImportMessage { get; set; } = string.Empty;
+    private bool ImportSuccess { get; set; }
+
+    // Export properties
+    private string ExportFormat { get; set; } = "ics";
+    private string ExportRange { get; set; } = "month";
+    private DateOnly CustomStartDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddMonths(-1));
+    private DateOnly CustomEndDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private bool IncludeRecurring { get; set; } = true;
+    private bool IncludeReminders { get; set; } = true;
+    private bool IncludeAttendees { get; set; } = true;
+    private bool IsExporting { get; set; }
+    private string ExportMessage { get; set; } = string.Empty;
+    private bool ExportSuccess { get; set; }
+
+    // Subscription properties
+    private bool ShowSubscriptionModal { get; set; }
+    private CalendarSubscription? EditingSubscription { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentAccount = await AccountService.GetDefaultAccountAsync();
+        if (CurrentAccount != null)
+        {
+            LoadSubscriptions();
+        }
+    }
+
+    private void LoadSubscriptions()
+    {
+        if (CurrentAccount != null)
+        {
+            // Load subscriptions (you'll need to implement this in the service)
+            Subscriptions = new List<CalendarSubscription>();
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        ImportPreview = string.Empty;
+        ImportMessage = string.Empty;
+
+        if (SelectedFile != null)
+        {
+            try
+            {
+                using var stream = SelectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB limit
+                using var reader = new StreamReader(stream);
+                var content = await reader.ReadToEndAsync();
+
+                // Show preview of first few lines
+                var lines = content.Split('\n').Take(10);
+                ImportPreview = string.Join('\n', lines);
+                if (content.Split('\n').Length > 10)
+                {
+                    ImportPreview += "\n... (truncated)";
+                }
+            }
+            catch (Exception ex)
+            {
+                ImportMessage = $"Error reading file: {ex.Message}";
+                ImportSuccess = false;
+            }
+        }
+    }
+
+    private async Task ImportCalendar()
+    {
+        if (SelectedFile == null || CurrentAccount == null) return;
+
+        IsImporting = true;
+        ImportMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = SelectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+
+            // Parse and import events based on format
+            var importedCount = 0;
+            if (ImportFormat == "ics")
+            {
+                importedCount = await ImportICalendar(content);
+            }
+            else if (ImportFormat == "csv")
+            {
+                importedCount = await ImportCsv(content);
+            }
+
+            ImportMessage = $"Successfully imported {importedCount} events.";
+            ImportSuccess = true;
+            await OnDataChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            ImportMessage = $"Import failed: {ex.Message}";
+            ImportSuccess = false;
+        }
+        finally
+        {
+            IsImporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<int> ImportICalendar(string content)
+    {
+        // Implement iCalendar parsing logic here
+        // This is a simplified implementation - you'd want to use a proper iCal library
+        var events = new List<CalendarEvent>();
+
+        // Parse basic iCal events (simplified)
+        var lines = content.Split('\n');
+        CalendarEvent? currentEvent = null;
+
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+            if (trimmedLine == "BEGIN:VEVENT")
+            {
+                currentEvent = new CalendarEvent
+                {
+                    AccountId = CurrentAccount!.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow
+                };
+            }
+            else if (trimmedLine == "END:VEVENT" && currentEvent != null)
+            {
+                events.Add(currentEvent);
+                currentEvent = null;
+            }
+            else if (currentEvent != null && trimmedLine.Contains(':'))
+            {
+                var parts = trimmedLine.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    var property = parts[0];
+                    var value = parts[1];
+
+                    switch (property)
+                    {
+                        case "SUMMARY":
+                            currentEvent.Title = value;
+                            break;
+                        case "DESCRIPTION":
+                            currentEvent.Description = value;
+                            break;
+                        case "LOCATION":
+                            currentEvent.Location = value;
+                            break;
+                        case "DTSTART":
+                            if (DateTime.TryParse(value, out var startDate))
+                                currentEvent.StartDateTime = startDate;
+                            break;
+                        case "DTEND":
+                            if (DateTime.TryParse(value, out var endDate))
+                                currentEvent.EndDateTime = endDate;
+                            break;
+                    }
+                }
+            }
+        }
+
+        // Import events to database
+        foreach (var evt in events)
+        {
+            if (!string.IsNullOrEmpty(evt.Title))
+            {
+                await CalendarService.CreateEventAsync(evt);
+            }
+        }
+
+        return events.Count;
+    }
+
+    private async Task<int> ImportCsv(string content)
+    {
+        // Implement CSV parsing logic here
+        var lines = content.Split('\n').Skip(1); // Skip header
+        var events = new List<CalendarEvent>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var fields = line.Split(',');
+            if (fields.Length >= 4)
+            {
+                var evt = new CalendarEvent
+                {
+                    AccountId = CurrentAccount!.Id,
+                    Title = fields[0].Trim('"'),
+                    Description = fields.Length > 4 ? fields[4].Trim('"') : "",
+                    Location = fields.Length > 5 ? fields[5].Trim('"') : "",
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow
+                };
+
+                if (DateTime.TryParse(fields[1].Trim('"'), out var startDate))
+                    evt.StartDateTime = startDate;
+                if (DateTime.TryParse(fields[2].Trim('"'), out var endDate))
+                    evt.EndDateTime = endDate;
+
+                events.Add(evt);
+            }
+        }
+
+        // Import events to database
+        foreach (var evt in events)
+        {
+            if (!string.IsNullOrEmpty(evt.Title))
+            {
+                await CalendarService.CreateEventAsync(evt);
+            }
+        }
+
+        return events.Count;
+    }
+
+    private void ClearImport()
+    {
+        SelectedFile = null;
+        ImportPreview = string.Empty;
+        ImportMessage = string.Empty;
+    }
+
+    private async Task ExportCalendar()
+    {
+        if (CurrentAccount == null) return;
+
+        IsExporting = true;
+        ExportMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var (startDate, endDate) = GetExportDateRange();
+            var exportData = await CalendarService.ExportEventsAsync(CurrentAccount.Id, startDate, endDate, ExportFormat);
+
+            var fileName = $"calendar-export-{DateTime.Now:yyyyMMdd}.{ExportFormat}";
+            var contentType = ExportFormat == "ics" ? "text/calendar" : "text/csv";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, contentType, exportData);
+
+            ExportMessage = "Export completed successfully.";
+            ExportSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"Export failed: {ex.Message}";
+            ExportSuccess = false;
+        }
+        finally
+        {
+            IsExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private (DateTime startDate, DateTime endDate) GetExportDateRange()
+    {
+        var now = DateTime.Today;
+        return ExportRange switch
+        {
+            "month" => (new DateTime(now.Year, now.Month, 1), new DateTime(now.Year, now.Month, 1).AddMonths(1).AddDays(-1)),
+            "quarter" => GetQuarterRange(now),
+            "year" => (new DateTime(now.Year, 1, 1), new DateTime(now.Year, 12, 31)),
+            "custom" => (CustomStartDate.ToDateTime(TimeOnly.MinValue), CustomEndDate.ToDateTime(TimeOnly.MaxValue)),
+            _ => (DateTime.MinValue, DateTime.MaxValue)
+        };
+    }
+
+    private (DateTime start, DateTime end) GetQuarterRange(DateTime date)
+    {
+        var quarter = (date.Month - 1) / 3 + 1;
+        var startMonth = (quarter - 1) * 3 + 1;
+        var start = new DateTime(date.Year, startMonth, 1);
+        var end = start.AddMonths(3).AddDays(-1);
+        return (start, end);
+    }
+
+    private void OnExportRangeChanged(ChangeEventArgs e)
+    {
+        ExportRange = e.Value?.ToString() ?? "month";
+        if (ExportRange == "custom")
+        {
+            CustomStartDate = DateOnly.FromDateTime(DateTime.Today.AddMonths(-1));
+            CustomEndDate = DateOnly.FromDateTime(DateTime.Today);
+        }
+    }
+
+    private void ShowAddSubscription()
+    {
+        EditingSubscription = new CalendarSubscription
+        {
+            AccountId = CurrentAccount?.Id ?? 0,
+            Color = "#28a745",
+            SyncIntervalMinutes = 60,
+            IsActive = true,
+            AutoSync = true
+        };
+        ShowSubscriptionModal = true;
+    }
+
+    private void EditSubscription(CalendarSubscription subscription)
+    {
+        EditingSubscription = new CalendarSubscription
+        {
+            Id = subscription.Id,
+            AccountId = subscription.AccountId,
+            Name = subscription.Name,
+            Url = subscription.Url,
+            Color = subscription.Color,
+            SyncIntervalMinutes = subscription.SyncIntervalMinutes,
+            IsActive = subscription.IsActive,
+            AutoSync = subscription.AutoSync
+        };
+        ShowSubscriptionModal = true;
+    }
+
+    private async Task SaveSubscription()
+    {
+        if (EditingSubscription == null) return;
+
+        try
+        {
+            // Implement subscription saving logic
+            // await SubscriptionService.SaveSubscriptionAsync(EditingSubscription);
+
+            LoadSubscriptions();
+            CloseSubscriptionModal();
+            await OnDataChanged.InvokeAsync();
+        }
+        catch (Exception)
+        {
+            // Handle error
+        }
+    }
+
+    private async Task DeleteSubscription(int subscriptionId)
+    {
+        // Implement deletion logic
+        LoadSubscriptions();
+        await OnDataChanged.InvokeAsync();
+    }
+
+    private async Task SyncSubscription(int subscriptionId)
+    {
+        // Implement sync logic
+        LoadSubscriptions();
+        await OnDataChanged.InvokeAsync();
+    }
+
+    private void CloseSubscriptionModal()
+    {
+        ShowSubscriptionModal = false;
+        EditingSubscription = null;
+    }
+
+    private static string GetStatusBadgeClass(SyncStatus status)
+    {
+        return status switch
+        {
+            SyncStatus.Success => "bg-success",
+            SyncStatus.Failed => "bg-danger",
+            SyncStatus.InProgress => "bg-warning",
+            SyncStatus.NotModified => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+}
+
+<style>
+.color-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid #dee2e6;
+    display: inline-block;
+}
+
+.import-export-component .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+pre {
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+</style>

@@ -1,0 +1,530 @@
+@using System.Text.Json
+
+<div class="recurrence-component">
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-redo me-2"></i>
+                Event Recurrence
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" checked="@IsRecurring" @onchange="OnRecurringChanged" id="isRecurring">
+                    <label class="form-check-label" for="isRecurring">
+                        This is a recurring event
+                    </label>
+                </div>
+            </div>
+
+            @if (IsRecurring)
+            {
+                <div class="recurring-options">
+                    <!-- Frequency Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Repeat</label>
+                        <select value="@Frequency" @onchange="OnFrequencyChanged" class="form-select">
+                            <option value="@RecurrenceFrequency.Daily">Daily</option>
+                            <option value="@RecurrenceFrequency.Weekly">Weekly</option>
+                            <option value="@RecurrenceFrequency.Monthly">Monthly</option>
+                            <option value="@RecurrenceFrequency.Yearly">Yearly</option>
+                        </select>
+                    </div>
+
+                    <!-- Interval -->
+                    <div class="mb-3">
+                        <label class="form-label">Every</label>
+                        <div class="input-group">
+                            <input type="number" @bind="Interval" class="form-control" min="1" max="999">
+                            <span class="input-group-text">@GetIntervalUnit()</span>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Options -->
+                    @if (Frequency == RecurrenceFrequency.Weekly)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Repeat on</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               checked="@SelectedDaysOfWeek.Contains(day)"
+                                               @onchange="@(e => ToggleDayOfWeek(day, (bool)e.Value!))"
+                                               id="day-@day">
+                                        <label class="form-check-label" for="day-@day">
+                                            @day.ToString().Substring(0, 3)
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Monthly Options -->
+                    @if (Frequency == RecurrenceFrequency.Monthly)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Monthly recurrence type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="monthlyType" checked="@MonthlyByDate" id="monthlyByDate" @onchange="@(() => OnMonthlyTypeChanged(true))">
+                                <label class="form-check-label" for="monthlyByDate">
+                                    On day @EventStartDate.Day of the month
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="monthlyType" checked="@(!MonthlyByDate)" id="monthlyByDay" @onchange="@(() => OnMonthlyTypeChanged(false))">
+                                <label class="form-check-label" for="monthlyByDay">
+                                    On the @GetWeekOfMonth() @EventStartDate.DayOfWeek of the month
+                                </label>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- End Options -->
+                    <div class="mb-3">
+                        <label class="form-label">End</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "never")" id="endNever" @onchange="@(() => OnEndTypeChanged("never"))">
+                            <label class="form-check-label" for="endNever">
+                                Never
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "after")" id="endAfter" @onchange="@(() => OnEndTypeChanged("after"))">
+                            <label class="form-check-label" for="endAfter">
+                                After
+                            </label>
+                        </div>
+                        @if (EndType == "after")
+                        {
+                            <div class="mt-2 ms-4">
+                                <div class="input-group" style="max-width: 200px;">
+                                    <input type="number" @bind="OccurrenceCount" class="form-control" min="1" max="999">
+                                    <span class="input-group-text">occurrences</span>
+                                </div>
+                            </div>
+                        }
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "on")" id="endOn" @onchange="@(() => OnEndTypeChanged("on"))">
+                            <label class="form-check-label" for="endOn">
+                                On
+                            </label>
+                        </div>
+                        @if (EndType == "on")
+                        {
+                            <div class="mt-2 ms-4">
+                                <input type="date" @bind="EndDate" class="form-control" style="max-width: 200px;">
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Exception Dates -->
+                    @if (ExceptionDates.Any())
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Exceptions (Skip these dates)</label>
+                            <div class="exception-dates">
+                                @foreach (var exceptionDate in ExceptionDates)
+                                {
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="me-2">@exceptionDate.ToString("MMM d, yyyy")</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveExceptionDate(exceptionDate)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ShowAddExceptionDate">
+                            <i class="fas fa-plus me-1"></i>
+                            Add Exception Date
+                        </button>
+                    </div>
+
+                    <!-- Recurrence Summary -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">Recurrence Summary</h6>
+                        <p class="mb-0">@GetRecurrenceSummary()</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Exception Date Modal -->
+@if (ShowExceptionModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">Add Exception Date</h6>
+                    <button type="button" class="btn-close" @onclick="CloseExceptionModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date to skip</label>
+                        <input type="date" @bind="NewExceptionDate" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseExceptionModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddExceptionDate">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public RecurrenceRule? RecurrenceRule { get; set; }
+    [Parameter] public DateTime EventStartDate { get; set; } = DateTime.Today;
+    [Parameter] public EventCallback<RecurrenceRule?> OnRecurrenceChanged { get; set; }
+
+    private bool IsRecurring { get; set; }
+    private RecurrenceFrequency Frequency { get; set; } = RecurrenceFrequency.Weekly;
+    private int Interval { get; set; } = 1;
+    private List<DayOfWeek> SelectedDaysOfWeek { get; set; } = new();
+    private bool MonthlyByDate { get; set; } = true;
+    private string EndType { get; set; } = "never";
+    private int OccurrenceCount { get; set; } = 10;
+    private DateOnly EndDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddMonths(6));
+    private List<DateOnly> ExceptionDates { get; set; } = new();
+
+    // Exception date modal
+    private bool ShowExceptionModal { get; set; }
+    private DateOnly NewExceptionDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+    protected override void OnInitialized()
+    {
+        if (RecurrenceRule != null)
+        {
+            LoadFromRecurrenceRule();
+        }
+        else
+        {
+            // Initialize with event start date
+            SelectedDaysOfWeek.Add(EventStartDate.DayOfWeek);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (RecurrenceRule != null && !IsRecurring)
+        {
+            LoadFromRecurrenceRule();
+        }
+    }
+
+    private void LoadFromRecurrenceRule()
+    {
+        IsRecurring = true;
+        Frequency = RecurrenceRule!.Frequency;
+        Interval = RecurrenceRule.Interval;
+
+        if (RecurrenceRule.Count.HasValue)
+        {
+            EndType = "after";
+            OccurrenceCount = RecurrenceRule.Count.Value;
+        }
+        else if (RecurrenceRule.Until.HasValue)
+        {
+            EndType = "on";
+            EndDate = DateOnly.FromDateTime(RecurrenceRule.Until.Value);
+        }
+        else
+        {
+            EndType = "never";
+        }
+
+        // Load days of week
+        SelectedDaysOfWeek = RecurrenceRule.GetDaysOfWeek();
+        if (!SelectedDaysOfWeek.Any() && Frequency == RecurrenceFrequency.Weekly)
+        {
+            SelectedDaysOfWeek.Add(EventStartDate.DayOfWeek);
+        }
+
+        // Load exception dates
+        if (!string.IsNullOrEmpty(RecurrenceRule.ExceptionDates))
+        {
+            try
+            {
+                var dates = JsonSerializer.Deserialize<List<string>>(RecurrenceRule.ExceptionDates);
+                ExceptionDates = dates?.Select(d => DateOnly.Parse(d)).ToList() ?? new List<DateOnly>();
+            }
+            catch
+            {
+                ExceptionDates = new List<DateOnly>();
+            }
+        }
+
+        // Determine monthly type
+        if (Frequency == RecurrenceFrequency.Monthly)
+        {
+            MonthlyByDate = RecurrenceRule.ByWeekOfMonth == null;
+        }
+    }
+
+    private async Task OnRecurringChanged(ChangeEventArgs e)
+    {
+        IsRecurring = (bool)e.Value!;
+        if (!IsRecurring)
+        {
+            await OnRecurrenceChanged.InvokeAsync(null);
+        }
+        else
+        {
+            await UpdateRecurrenceRule();
+        }
+    }
+
+    private async Task OnFrequencyChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<RecurrenceFrequency>(e.Value?.ToString(), out var frequency))
+        {
+            Frequency = frequency;
+
+            // Reset frequency-specific settings
+            if (Frequency == RecurrenceFrequency.Weekly && !SelectedDaysOfWeek.Any())
+            {
+                SelectedDaysOfWeek.Add(EventStartDate.DayOfWeek);
+            }
+
+            await UpdateRecurrenceRule();
+        }
+    }
+
+    private async Task OnMonthlyTypeChanged(bool byDate)
+    {
+        MonthlyByDate = byDate;
+        await UpdateRecurrenceRule();
+    }
+
+    private async Task OnEndTypeChanged(string endType)
+    {
+        EndType = endType;
+        await UpdateRecurrenceRule();
+    }
+
+    private async Task ToggleDayOfWeek(DayOfWeek day, bool selected)
+    {
+        if (selected)
+        {
+            if (!SelectedDaysOfWeek.Contains(day))
+                SelectedDaysOfWeek.Add(day);
+        }
+        else
+        {
+            SelectedDaysOfWeek.Remove(day);
+        }
+
+        await UpdateRecurrenceRule();
+    }
+
+    private async Task UpdateRecurrenceRule()
+    {
+        if (!IsRecurring)
+        {
+            await OnRecurrenceChanged.InvokeAsync(null);
+            return;
+        }
+
+        var rule = new RecurrenceRule
+        {
+            Frequency = Frequency,
+            Interval = Interval,
+            Count = EndType == "after" ? OccurrenceCount : null,
+            Until = EndType == "on" ? EndDate.ToDateTime(TimeOnly.MinValue) : null,
+            ByDayOfWeek = Frequency == RecurrenceFrequency.Weekly && SelectedDaysOfWeek.Any()
+                ? string.Join(",", SelectedDaysOfWeek.Select(d => d.ToString()))
+                : null,
+            ByWeekOfMonth = Frequency == RecurrenceFrequency.Monthly && !MonthlyByDate
+                ? GetWeekOfMonthNumber()
+                : null,
+            ByDayOfMonth = Frequency == RecurrenceFrequency.Monthly && MonthlyByDate
+                ? EventStartDate.Day.ToString()
+                : null,
+            ExceptionDates = ExceptionDates.Any()
+                ? JsonSerializer.Serialize(ExceptionDates.Select(d => d.ToString("yyyy-MM-dd")).ToList())
+                : null
+        };
+
+        await OnRecurrenceChanged.InvokeAsync(rule);
+    }
+
+    private string GetIntervalUnit()
+    {
+        return Frequency switch
+        {
+            RecurrenceFrequency.Daily => Interval == 1 ? "day" : "days",
+            RecurrenceFrequency.Weekly => Interval == 1 ? "week" : "weeks",
+            RecurrenceFrequency.Monthly => Interval == 1 ? "month" : "months",
+            RecurrenceFrequency.Yearly => Interval == 1 ? "year" : "years",
+            _ => "units"
+        };
+    }
+
+    private string GetWeekOfMonth()
+    {
+        var dayOfMonth = EventStartDate.Day;
+        var weekOfMonth = (dayOfMonth - 1) / 7 + 1;
+
+        return weekOfMonth switch
+        {
+            1 => "first",
+            2 => "second",
+            3 => "third",
+            4 => "fourth",
+            _ => "last"
+        };
+    }
+
+    private int GetWeekOfMonthNumber()
+    {
+        var dayOfMonth = EventStartDate.Day;
+        var weekOfMonth = (dayOfMonth - 1) / 7 + 1;
+
+        // Check if it's the last occurrence of the day in the month
+        var lastDayOfMonth = DateTime.DaysInMonth(EventStartDate.Year, EventStartDate.Month);
+        var lastOccurrence = new DateTime(EventStartDate.Year, EventStartDate.Month, lastDayOfMonth);
+
+        while (lastOccurrence.DayOfWeek != EventStartDate.DayOfWeek)
+        {
+            lastOccurrence = lastOccurrence.AddDays(-1);
+        }
+
+        if (EventStartDate.Day > lastOccurrence.Day - 7)
+        {
+            return -1; // Last occurrence
+        }
+
+        return weekOfMonth;
+    }
+
+    private string GetRecurrenceSummary()
+    {
+        if (!IsRecurring) return "Not recurring";
+
+        var summary = $"Repeats every {(Interval == 1 ? "" : Interval + " ")}{GetIntervalUnit()}";
+
+        if (Frequency == RecurrenceFrequency.Weekly && SelectedDaysOfWeek.Any())
+        {
+            var dayNames = SelectedDaysOfWeek.OrderBy(d => (int)d).Select(d => d.ToString().Substring(0, 3));
+            summary += $" on {string.Join(", ", dayNames)}";
+        }
+        else if (Frequency == RecurrenceFrequency.Monthly)
+        {
+            if (MonthlyByDate)
+            {
+                summary += $" on day {EventStartDate.Day}";
+            }
+            else
+            {
+                summary += $" on the {GetWeekOfMonth()} {EventStartDate.DayOfWeek}";
+            }
+        }
+
+        switch (EndType)
+        {
+            case "after":
+                summary += $", {OccurrenceCount} times";
+                break;
+            case "on":
+                summary += $", until {EndDate:MMM d, yyyy}";
+                break;
+        }
+
+        if (ExceptionDates.Any())
+        {
+            summary += $" (with {ExceptionDates.Count} exception{(ExceptionDates.Count == 1 ? "" : "s")})";
+        }
+
+        return summary;
+    }
+
+    private void ShowAddExceptionDate()
+    {
+        NewExceptionDate = DateOnly.FromDateTime(DateTime.Today);
+        ShowExceptionModal = true;
+    }
+
+    private async Task AddExceptionDate()
+    {
+        if (!ExceptionDates.Contains(NewExceptionDate))
+        {
+            ExceptionDates.Add(NewExceptionDate);
+            ExceptionDates = ExceptionDates.OrderBy(d => d).ToList();
+            await UpdateRecurrenceRule();
+        }
+        CloseExceptionModal();
+    }
+
+    private async Task RemoveExceptionDate(DateOnly date)
+    {
+        ExceptionDates.Remove(date);
+        await UpdateRecurrenceRule();
+    }
+
+    private void CloseExceptionModal()
+    {
+        ShowExceptionModal = false;
+    }
+}
+
+<style>
+.recurrence-component .card {
+    border: 1px solid #dee2e6;
+}
+
+.recurring-options {
+    border-left: 3px solid #007bff;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+
+.form-check {
+    margin-bottom: 0.5rem;
+}
+
+.form-check-input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.exception-dates {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.input-group {
+    max-width: 300px;
+}
+
+@@media (max-width: 576px) {
+    .d-flex.gap-2.flex-wrap {
+        gap: 0.5rem !important;
+    }
+
+    .form-check {
+        margin-bottom: 0.25rem;
+    }
+}
+</style>

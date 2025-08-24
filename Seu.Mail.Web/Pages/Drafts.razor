@@ -1,0 +1,533 @@
+@page "/drafts"
+@inject IEmailService EmailService
+@inject IAccountService AccountService
+@inject IHtmlUtilityService HtmlUtilityService
+@inject NavigationManager Navigation
+
+<PageTitle>Drafts - Seu Email</PageTitle>
+
+<div class="email-list-container h-100">
+    <div class="email-list-header bg-white border-bottom p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">
+                    <i class="fas fa-file-alt me-2 text-primary"></i>
+                    Drafts
+                    @if (emails.Any())
+                    {
+                        <span class="badge bg-secondary ms-2">@emails.Count</span>
+                    }
+                </h4>
+            </div>
+            <div class="email-actions">
+                <button class="btn btn-outline-primary btn-sm me-2" @onclick="SelectAll">
+                    <i class="fas fa-check-square"></i>
+                    Select All
+                </button>
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected" disabled="@(!selectedEmails.Any())">
+                    <i class="fas fa-trash"></i>
+                    Delete (@selectedEmails.Count)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="email-list-content flex-grow-1 overflow-auto">
+        @if (isLoading)
+        {
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading drafts...</p>
+            </div>
+        }
+        else if (!emails.Any())
+        {
+            <div class="empty-state text-center p-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No drafts</h5>
+                <p class="text-muted">You don't have any saved drafts</p>
+                <a href="/compose" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>
+                    Compose Email
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="email-list">
+                @foreach (var email in emails)
+                {
+                    <div class="email-item draft @(selectedEmails.Contains(email.Id) ? "selected" : "")"
+                         @onclick="() => SelectEmail(email.Id)">
+                        <div class="email-checkbox">
+                            <input type="checkbox" class="form-check-input"
+                                   checked="@selectedEmails.Contains(email.Id)"
+                                   @onchange="(e) => ToggleEmailSelection(email.Id, (bool)e.Value!)"
+                                   @onclick:stopPropagation="true">
+                        </div>
+
+                        <div class="email-content flex-grow-1" @onclick="() => EditDraft(email.Id)" @onclick:stopPropagation="true">
+                            <div class="email-header d-flex justify-content-between align-items-start">
+                                <div class="email-recipient">
+                                    <strong class="recipient-name">
+                                        @if (!string.IsNullOrEmpty(email.To))
+                                        {
+                                            @:To: @GetRecipientName(email.To)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">(No recipient)</span>
+                                        }
+                                    </strong>
+                                    @if (!string.IsNullOrEmpty(email.To))
+                                    {
+                                        <span class="recipient-email text-muted ms-1">@GetRecipientEmail(email.To)</span>
+                                    }
+                                </div>
+                                <div class="email-meta text-muted">
+                                    <span class="email-date">@FormatDate(email.DateReceived)</span>
+                                    @if (email.HasAttachments)
+                                    {
+                                        <i class="fas fa-paperclip ms-2"></i>
+                                    }
+                                    <i class="fas fa-edit ms-2" title="Draft"></i>
+                                </div>
+                            </div>
+
+                            <div class="email-subject">
+                                @if (!string.IsNullOrEmpty(email.Subject))
+                                {
+                                    @HtmlUtilityService.StripHtml(email.Subject)
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">(No subject)</span>
+                                }
+                            </div>
+
+                            <div class="email-preview text-muted">
+                                @GetEmailPreview(email)
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(email.Cc))
+                            {
+                                <div class="email-cc text-muted small mt-1">
+                                    <i class="fas fa-copy me-1"></i>
+                                    Cc: @email.Cc
+                                </div>
+                            }
+                        </div>
+
+                        <div class="email-actions">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditDraft(email.Id)" @onclick:stopPropagation="true" title="Edit Draft">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => SendDraft(email.Id)" @onclick:stopPropagation="true" title="Send Now">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmail(email.Id)" @onclick:stopPropagation="true" title="Delete Draft">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (hasMoreEmails)
+            {
+                <div class="load-more-container p-3 text-center">
+                    <button class="btn btn-outline-primary" @onclick="LoadMoreEmails" disabled="@isLoadingMore">
+                        @if (isLoadingMore)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Load More
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Send Draft Modal -->
+@if (showSendModal && draftToSend != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-paper-plane text-primary me-2"></i>
+                        Send Draft
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideSendModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Subject:</strong> @(HtmlUtilityService.StripHtml(draftToSend.Subject ?? "") ?? "(No subject)")</p>
+                    <p><strong>To:</strong> @(draftToSend.To ?? "(No recipient)")</p>
+                    @if (!string.IsNullOrEmpty(draftToSend.Cc))
+                    {
+                        <p><strong>Cc:</strong> @draftToSend.Cc</p>
+                    }
+                    <p class="text-muted">Are you sure you want to send this draft?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideSendModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmSendDraft" disabled="@isSending">
+                        @if (isSending)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Send Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Toast Messages -->
+@if (showToast)
+{
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">@toastTitle</strong>
+                <button type="button" class="btn-close" @onclick="() => showToast = false"></button>
+            </div>
+            <div class="toast-body">
+                @toastMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<EmailMessage> emails = new();
+    private HashSet<int> selectedEmails = new();
+    private bool isLoading = true;
+    private bool isLoadingMore = false;
+    private bool hasMoreEmails = true;
+    private int currentPage = 1;
+    private const int pageSize = 50;
+
+    // Send modal
+    private bool showSendModal = false;
+    private EmailMessage? draftToSend = null;
+    private bool isSending = false;
+
+    // Toast properties
+    private bool showToast = false;
+    private string toastTitle = "";
+    private string toastMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmails();
+    }
+
+    private async Task LoadEmails()
+    {
+        isLoading = true;
+        try
+        {
+            var account = await AccountService.GetDefaultAccountAsync();
+            if (account != null)
+            {
+                emails = await EmailService.GetEmailsAsync(account, "DRAFTS", pageSize);
+                hasMoreEmails = emails.Count == pageSize;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading drafts: {ex.Message}");
+            ShowToast("Error", "Failed to load drafts.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadMoreEmails()
+    {
+        if (isLoadingMore || !hasMoreEmails) return;
+
+        isLoadingMore = true;
+        try
+        {
+            var account = await AccountService.GetDefaultAccountAsync();
+            if (account != null)
+            {
+                currentPage++;
+                var moreEmails = await EmailService.GetEmailsAsync(account, "DRAFTS", pageSize);
+
+                if (moreEmails.Any())
+                {
+                    emails.AddRange(moreEmails);
+                    hasMoreEmails = moreEmails.Count == pageSize;
+                }
+                else
+                {
+                    hasMoreEmails = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading more drafts: {ex.Message}");
+            ShowToast("Error", "Failed to load more drafts.");
+        }
+        finally
+        {
+            isLoadingMore = false;
+        }
+    }
+
+    private void SelectEmail(int emailId)
+    {
+        if (selectedEmails.Contains(emailId))
+        {
+            selectedEmails.Remove(emailId);
+        }
+        else
+        {
+            selectedEmails.Add(emailId);
+        }
+    }
+
+    private void ToggleEmailSelection(int emailId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            selectedEmails.Add(emailId);
+        }
+        else
+        {
+            selectedEmails.Remove(emailId);
+        }
+    }
+
+    private void SelectAll()
+    {
+        if (selectedEmails.Count == emails.Count)
+        {
+            selectedEmails.Clear();
+        }
+        else
+        {
+            selectedEmails = emails.Select(e => e.Id).ToHashSet();
+        }
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (!selectedEmails.Any()) return;
+
+        try
+        {
+            foreach (var emailId in selectedEmails)
+            {
+                await EmailService.DeleteEmailAsync(emailId);
+            }
+
+            emails.RemoveAll(e => selectedEmails.Contains(e.Id));
+            selectedEmails.Clear();
+            ShowToast("Success", "Selected drafts deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting drafts: {ex.Message}");
+            ShowToast("Error", "Failed to delete selected drafts.");
+        }
+    }
+
+    private async Task DeleteEmail(int emailId)
+    {
+        try
+        {
+            await EmailService.DeleteEmailAsync(emailId);
+            emails.RemoveAll(e => e.Id == emailId);
+            selectedEmails.Remove(emailId);
+            ShowToast("Success", "Draft deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting draft: {ex.Message}");
+            ShowToast("Error", "Failed to delete draft.");
+        }
+    }
+
+    private void EditDraft(int emailId)
+    {
+        Navigation.NavigateTo($"/compose?draft={emailId}");
+    }
+
+    private void SendDraft(int emailId)
+    {
+        var draft = emails.FirstOrDefault(e => e.Id == emailId);
+        if (draft != null)
+        {
+            // Validate draft has required fields
+            if (string.IsNullOrEmpty(draft.To))
+            {
+                ShowToast("Error", "Draft must have at least one recipient before sending.");
+                return;
+            }
+
+            draftToSend = draft;
+            showSendModal = true;
+        }
+    }
+
+    private void HideSendModal()
+    {
+        showSendModal = false;
+        draftToSend = null;
+    }
+
+    private async Task ConfirmSendDraft()
+    {
+        if (draftToSend == null || isSending) return;
+
+        isSending = true;
+        try
+        {
+            var account = await AccountService.GetDefaultAccountAsync();
+            if (account == null)
+            {
+                ShowToast("Error", "No account selected.");
+                return;
+            }
+
+            var ccEmails = !string.IsNullOrEmpty(draftToSend.Cc) ?
+                string.Join(",", draftToSend.Cc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
+
+            var bccEmails = !string.IsNullOrEmpty(draftToSend.Bcc) ?
+                string.Join(",", draftToSend.Bcc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
+
+            var body = !string.IsNullOrEmpty(draftToSend.HtmlBody) ? draftToSend.HtmlBody : draftToSend.TextBody ?? "";
+
+            var success = await EmailService.SendEmailAsync(
+                account,
+                draftToSend.To,
+                draftToSend.Subject ?? "",
+                body,
+                !string.IsNullOrEmpty(draftToSend.HtmlBody),
+                ccEmails,
+                bccEmails
+            );
+
+            if (success)
+            {
+                // Delete the draft after successful send
+                await EmailService.DeleteEmailAsync(draftToSend.Id);
+                emails.RemoveAll(e => e.Id == draftToSend.Id);
+                selectedEmails.Remove(draftToSend.Id);
+
+                ShowToast("Success", "Draft sent successfully!");
+                HideSendModal();
+            }
+            else
+            {
+                ShowToast("Error", "Failed to send draft. Please check your account settings.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending draft: {ex.Message}");
+            ShowToast("Error", $"Error sending draft: {ex.Message}");
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+
+    private string GetRecipientName(string to)
+    {
+        if (string.IsNullOrEmpty(to)) return "Unknown";
+
+        var firstRecipient = to.Split(';')[0].Trim();
+        var match = System.Text.RegularExpressions.Regex.Match(firstRecipient, @"^(.+?)\s*<");
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim('"');
+        }
+
+        return firstRecipient.Split('@')[0];
+    }
+
+    private string GetRecipientEmail(string to)
+    {
+        if (string.IsNullOrEmpty(to)) return "";
+
+        var firstRecipient = to.Split(';')[0].Trim();
+        var match = System.Text.RegularExpressions.Regex.Match(firstRecipient, @"<(.+?)>");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        return firstRecipient;
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        var now = DateTime.Now;
+        var diff = now - date;
+
+        if (diff.TotalDays < 1)
+        {
+            return date.ToString("HH:mm");
+        }
+        else if (diff.TotalDays < 7)
+        {
+            return date.ToString("ddd");
+        }
+        else if (date.Year == now.Year)
+        {
+            return date.ToString("MMM dd");
+        }
+        else
+        {
+            return date.ToString("MMM dd, yyyy");
+        }
+    }
+
+    private string GetEmailPreview(EmailMessage email)
+    {
+        var content = !string.IsNullOrEmpty(email.TextBody) ? email.TextBody : email.HtmlBody;
+        if (string.IsNullOrEmpty(content)) return "(Empty draft)";
+
+        // Remove HTML tags if present
+        var preview = System.Text.RegularExpressions.Regex.Replace(content, "<.*?>", "");
+
+        // Limit to 100 characters
+        if (preview.Length > 100)
+        {
+            preview = preview.Substring(0, 100) + "...";
+        }
+
+        return preview;
+    }
+
+
+
+    private void ShowToast(string title, string message)
+    {
+        toastTitle = title;
+        toastMessage = message;
+        showToast = true;
+        StateHasChanged();
+
+        Task.Delay(4000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+}

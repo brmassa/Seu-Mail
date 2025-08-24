@@ -1,0 +1,481 @@
+@page "/calendar/settings"
+@inject ICalendarSettingsService CalendarSettingsService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>Calendar Settings - Seu Email</PageTitle>
+
+<div class="container-fluid p-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-cog me-2"></i>
+                    Calendar Settings
+                </h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="/calendar">Calendar</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Settings</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading settings...</span>
+            </div>
+        </div>
+    }
+    else if (Settings != null)
+    {
+        <div class="row">
+            <div class="col-lg-8 col-md-10">
+                <EditForm Model="Settings" OnValidSubmit="SaveSettings">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="alert alert-danger" />
+
+                    <!-- General Settings Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                General Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">First Day of Week</label>
+                                        <InputSelect @bind-Value="Settings.FirstDayOfWeek" class="form-select">
+                                            <option value="@DayOfWeek.Sunday">Sunday</option>
+                                            <option value="@DayOfWeek.Monday">Monday</option>
+                                            <option value="@DayOfWeek.Tuesday">Tuesday</option>
+                                            <option value="@DayOfWeek.Wednesday">Wednesday</option>
+                                            <option value="@DayOfWeek.Thursday">Thursday</option>
+                                            <option value="@DayOfWeek.Friday">Friday</option>
+                                            <option value="@DayOfWeek.Saturday">Saturday</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Default View</label>
+                                        <InputSelect @bind-Value="Settings.DefaultView" class="form-select">
+                                            <option value="@CalendarViewType.Month">Month</option>
+                                            <option value="@CalendarViewType.Week">Week</option>
+                                            <option value="@CalendarViewType.Day">Day</option>
+                                            <option value="@CalendarViewType.Agenda">Agenda</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.ShowWeekNumbers" class="form-check-input" id="showWeekNumbers" />
+                                        <label class="form-check-label" for="showWeekNumbers">
+                                            Show Week Numbers
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.ShowWeekends" class="form-check-input" id="showWeekends" />
+                                        <label class="form-check-label" for="showWeekends">
+                                            Show Weekends
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.HighlightToday" class="form-check-input" id="highlightToday" />
+                                        <label class="form-check-label" for="highlightToday">
+                                            Highlight Today
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.ShowEventTooltips" class="form-check-input" id="showTooltips" />
+                                        <label class="form-check-label" for="showTooltips">
+                                            Show Event Tooltips
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Time & Date Settings Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clock me-2"></i>
+                                Time & Date Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Time Zone</label>
+                                        <InputSelect @bind-Value="Settings.TimeZone" class="form-select">
+                                            @foreach (var tz in AvailableTimeZones)
+                                            {
+                                                <option value="@tz.Id">@tz.DisplayName</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.Use24HourFormat" class="form-check-input" id="use24Hour" />
+                                        <label class="form-check-label" for="use24Hour">
+                                            Use 24-hour Format
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Day View Start Hour</label>
+                                        <InputSelect @bind-Value="Settings.DayViewStartHour" class="form-select">
+                                            @for (int i = 0; i < 24; i++)
+                                            {
+                                                <option value="@i">@i.ToString("00"):00</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Day View End Hour</label>
+                                        <InputSelect @bind-Value="Settings.DayViewEndHour" class="form-select">
+                                            @for (int i = 1; i <= 24; i++)
+                                            {
+                                                <option value="@i">@i.ToString("00"):00</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Time Slot Interval (minutes)</label>
+                                        <InputSelect @bind-Value="Settings.TimeSlotInterval" class="form-select">
+                                            <option value="15">15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                            <option value="60">1 hour</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Settings Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-plus me-2"></i>
+                                Event Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Default Event Duration (minutes)</label>
+                                        <InputSelect @bind-Value="Settings.DefaultEventDuration" class="form-select">
+                                            <option value="30">30 minutes</option>
+                                            <option value="60">1 hour</option>
+                                            <option value="90">1.5 hours</option>
+                                            <option value="120">2 hours</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Default Event Color</label>
+                                        <div class="input-group">
+                                            <InputText @bind-Value="Settings.DefaultEventColor" class="form-control" type="color" />
+                                            <span class="input-group-text">@Settings.DefaultEventColor</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Default Reminder (minutes before)</label>
+                                        <InputSelect @bind-Value="Settings.DefaultReminderMinutes" class="form-select">
+                                            <option value="0">No reminder</option>
+                                            <option value="5">5 minutes</option>
+                                            <option value="10">10 minutes</option>
+                                            <option value="15">15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                            <option value="60">1 hour</option>
+                                            <option value="1440">1 day</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Max Events per Day Cell</label>
+                                        <InputNumber @bind-Value="Settings.MaxEventsPerDayCell" class="form-control" min="1" max="10" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.EnableReminders" class="form-check-input" id="enableReminders" />
+                                        <label class="form-check-label" for="enableReminders">
+                                            Enable Event Reminders
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.ConfirmEventDeletion" class="form-check-input" id="confirmDeletion" />
+                                        <label class="form-check-label" for="confirmDeletion">
+                                            Confirm Before Deleting Events
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <InputCheckbox @bind-Value="Settings.ShowAllDayEventsAtTop" class="form-check-input" id="allDayAtTop" />
+                                <label class="form-check-label" for="allDayAtTop">
+                                    Show All-Day Events at Top
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Settings Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-sync me-2"></i>
+                                Subscription Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Settings.AutoSyncSubscriptions" class="form-check-input" id="autoSync" />
+                                        <label class="form-check-label" for="autoSync">
+                                            Auto-sync Calendar Subscriptions
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Auto-sync Interval</label>
+                                        <InputSelect @bind-Value="Settings.AutoSyncIntervalMinutes" class="form-select" disabled="@(!Settings.AutoSyncSubscriptions)">
+                                            <option value="15">Every 15 minutes</option>
+                                            <option value="30">Every 30 minutes</option>
+                                            <option value="60">Every hour</option>
+                                            <option value="360">Every 6 hours</option>
+                                            <option value="1440">Daily</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-primary me-2" disabled="@IsSaving">
+                                @if (IsSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                <i class="fas fa-save me-2"></i>
+                                Save Settings
+                            </button>
+                            <button type="button" class="btn btn-secondary me-2" @onclick="ResetToDefaults">
+                                <i class="fas fa-undo me-2"></i>
+                                Reset to Defaults
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="GoBack">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Calendar
+                            </button>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+
+            <!-- Settings Preview Card -->
+            <div class="col-lg-4 col-md-2">
+                <div class="card position-sticky" style="top: 20px;">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>
+                            Preview
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">First day of week:</small>
+                            <div>@Settings.FirstDayOfWeek</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Default view:</small>
+                            <div>@Settings.DefaultView</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Working hours:</small>
+                            <div>@Settings.DayViewStartHour.ToString("00"):00 - @Settings.DayViewEndHour.ToString("00"):00</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Default event color:</small>
+                            <div class="d-flex align-items-center">
+                                <div class="color-preview me-2" style="background-color: @Settings.DefaultEventColor; width: 20px; height: 20px; border-radius: 3px; border: 1px solid #dee2e6;"></div>
+                                @Settings.DefaultEventColor
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Time format:</small>
+                            <div>@(Settings.Use24HourFormat ? "24-hour" : "12-hour")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private CalendarSettings? Settings { get; set; }
+    private EmailAccount? CurrentAccount { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; } = false;
+    private List<TimeZoneInfo> AvailableTimeZones { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentAccount = await AccountService.GetDefaultAccountAsync();
+        if (CurrentAccount == null)
+        {
+            Navigation.NavigateTo("/accounts");
+            return;
+        }
+
+        // Load available time zones
+        AvailableTimeZones = TimeZoneInfo.GetSystemTimeZones().ToList();
+
+        await LoadSettings();
+        IsLoading = false;
+    }
+
+    private async Task LoadSettings()
+    {
+        if (CurrentAccount != null)
+        {
+            Settings = await CalendarSettingsService.GetOrCreateSettingsAsync(CurrentAccount.Id);
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (Settings == null || CurrentAccount == null) return;
+
+        IsSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            Settings.ModifiedAt = DateTime.UtcNow;
+            await CalendarSettingsService.SaveSettingsAsync(Settings);
+
+            // Show success message (you could implement a toast notification here)
+            await Task.Delay(500); // Brief delay to show saving state
+        }
+        catch (Exception)
+        {
+            // Handle error (you could implement error notification here)
+        }
+        finally
+        {
+            IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ResetToDefaults()
+    {
+        if (CurrentAccount == null) return;
+
+        var confirmed = await Task.FromResult(true); // You could implement a confirmation dialog here
+        if (confirmed)
+        {
+            await CalendarSettingsService.ResetToDefaultsAsync(CurrentAccount.Id);
+            await LoadSettings();
+            StateHasChanged();
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/calendar");
+    }
+}
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.color-preview {
+    display: inline-block;
+}
+
+.position-sticky {
+    position: -webkit-sticky;
+    position: sticky;
+}
+
+@@media (max-width: 991.98px) {
+    .position-sticky {
+        position: static;
+    }
+}
+</style>

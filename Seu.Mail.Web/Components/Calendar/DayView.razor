@@ -1,0 +1,266 @@
+<div class="day-view">
+    <div class="day-header">
+        <div class="day-title">
+            <h3>@CurrentDate.ToString("dddd, MMMM d, yyyy")</h3>
+        </div>
+    </div>
+
+    <div class="day-body">
+        <div class="time-column">
+            @for (int hour = StartHour; hour <= EndHour; hour++)
+            {
+                <div class="time-slot">
+                    <span class="time-label">@hour.ToString("00"):00</span>
+                </div>
+            }
+        </div>
+
+        <div class="day-column" @onclick="() => OnDayClick(CurrentDate)">
+            @for (int hour = StartHour; hour <= EndHour; hour++)
+            {
+                <div class="time-slot" @onclick="() => HandleTimeSlotClick(CurrentDate.Date.AddHours(hour))" @onclick:stopPropagation="true">
+                    @foreach (var evt in GetEventsForTimeSlot(hour))
+                    {
+                        <div class="event-item" style="background-color: @evt.Color; height: @GetEventHeight(evt)px; top: @GetEventTop(evt)px"
+                             @onclick="() => HandleEventClick(evt)" @onclick:stopPropagation="true">
+                            <div class="event-title">@evt.Title</div>
+                            <div class="event-time">@evt.StartDateTime.ToString("HH:mm") - @evt.EndDateTime.ToString("HH:mm")</div>
+                            @if (!string.IsNullOrEmpty(evt.Location))
+                            {
+                                <div class="event-location">📍 @evt.Location</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- All-day events section -->
+    @if (GetAllDayEvents().Any())
+    {
+        <div class="all-day-events">
+            <div class="all-day-header">All Day</div>
+            <div class="all-day-list">
+                @foreach (var evt in GetAllDayEvents())
+                {
+                    <div class="all-day-event" style="background-color: @evt.Color" @onclick="() => HandleEventClick(evt)">
+                        <span class="event-title">@evt.Title</span>
+                        @if (!string.IsNullOrEmpty(evt.Location))
+                        {
+                            <span class="event-location">📍 @evt.Location</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<CalendarEvent>? Events { get; set; }
+    [Parameter] public DateTime CurrentDate { get; set; } = DateTime.Today;
+    [Parameter] public CalendarSettings? Settings { get; set; }
+    [Parameter] public EventCallback<CalendarEvent> OnEventClick { get; set; }
+    [Parameter] public EventCallback<DateTime> OnTimeSlotClick { get; set; }
+    [Parameter] public EventCallback<(CalendarEvent, DateTime)> OnEventDrop { get; set; }
+
+    private int StartHour => Settings?.DayViewStartHour ?? 6;
+    private int EndHour => Settings?.DayViewEndHour ?? 22;
+
+    private List<CalendarEvent> GetEventsForTimeSlot(int hour)
+    {
+        if (Events == null) return new List<CalendarEvent>();
+
+        var slotStart = CurrentDate.Date.AddHours(hour);
+        var slotEnd = slotStart.AddHours(1);
+
+        return Events.Where(e =>
+            e.StartDateTime.Date == CurrentDate.Date &&
+            e.StartDateTime < slotEnd &&
+            e.EndDateTime > slotStart &&
+            !e.IsAllDay)
+            .OrderBy(e => e.StartDateTime)
+            .ToList();
+    }
+
+    private List<CalendarEvent> GetAllDayEvents()
+    {
+        if (Events == null) return new List<CalendarEvent>();
+
+        return Events.Where(e =>
+            e.StartDateTime.Date <= CurrentDate.Date &&
+            e.EndDateTime.Date >= CurrentDate.Date &&
+            e.IsAllDay)
+            .OrderBy(e => e.StartDateTime)
+            .ToList();
+    }
+
+    private int GetEventHeight(CalendarEvent evt)
+    {
+        var duration = evt.EndDateTime - evt.StartDateTime;
+        return Math.Max(30, (int)(duration.TotalMinutes));
+    }
+
+    private int GetEventTop(CalendarEvent evt)
+    {
+        var minutesFromHourStart = evt.StartDateTime.Minute;
+        return minutesFromHourStart;
+    }
+
+    private void OnDayClick(DateTime day)
+    {
+        // Handle day click if needed
+    }
+
+    private async Task HandleTimeSlotClick(DateTime dateTime)
+    {
+        await OnTimeSlotClick.InvokeAsync(dateTime);
+    }
+
+    private async Task HandleEventClick(CalendarEvent evt)
+    {
+        await OnEventClick.InvokeAsync(evt);
+    }
+}
+
+<style>
+.day-view {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.day-header {
+    padding: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.day-title h3 {
+    margin: 0;
+    color: #495057;
+}
+
+.all-day-events {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+}
+
+.all-day-header {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.all-day-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.all-day-event {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    color: white;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.all-day-event:hover {
+    opacity: 0.8;
+}
+
+.day-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    overflow-y: auto;
+}
+
+.time-column {
+    border-right: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.time-slot {
+    height: 60px;
+    border-bottom: 1px solid #e9ecef;
+    position: relative;
+    cursor: pointer;
+}
+
+.time-slot:hover {
+    background-color: #f8f9fa;
+}
+
+.time-label {
+    position: absolute;
+    top: -8px;
+    left: 0.5rem;
+    font-size: 0.75rem;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    padding: 0 0.25rem;
+}
+
+.day-column {
+    position: relative;
+}
+
+.day-column .time-slot {
+    border-right: none;
+}
+
+.event-item {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.event-item:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.event-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.event-time {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    margin-bottom: 2px;
+}
+
+.event-location {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.all-day-event .event-location {
+    font-size: 0.8rem;
+}
+</style>
