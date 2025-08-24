@@ -6,10 +6,23 @@
 @inject IHtmlUtilityService HtmlUtilityService
 @inject NavigationManager Navigation
 @using Seu.Mail.Core.Enums
+@using Seu.Mail.Web.Components
 
 <PageTitle>Inbox - Seu Email</PageTitle>
 
 <div class="email-list-container h-100">
+    <!-- Bulk Actions Bar -->
+    <EmailBulkActions SelectedEmailIds="selectedEmails"
+                      TotalEmailCount="emails.Count"
+                      OnMarkAsRead="HandleBulkMarkAsRead"
+                      OnMarkAsUnread="HandleBulkMarkAsUnread"
+                      OnToggleImportant="HandleBulkToggleImportant"
+                      OnArchive="HandleBulkArchive"
+                      OnMarkAsSpam="HandleBulkMarkAsSpam"
+                      OnDelete="HandleBulkDelete"
+                      OnSelectAll="SelectAll"
+                      OnClearSelection="ClearSelection" />
+
     <div class="email-list-header bg-white border-bottom p-3">
         <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -25,12 +38,11 @@
             <div class="email-actions">
                 <button class="btn btn-outline-primary btn-sm me-2" @onclick="SelectAll">
                     <i class="fas fa-check-square"></i>
-                    Select All
+                    @(selectedEmails.Count == emails.Count && emails.Any() ? "Deselect All" : "Select All")
                 </button>
-                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected"
-                        disabled="@(!selectedEmails.Any())">
-                    <i class="fas fa-trash"></i>
-                    Delete (@selectedEmails.Count)
+                <button class="btn btn-outline-primary btn-sm me-2" @onclick="SyncEmails">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
                 </button>
             </div>
         </div>
@@ -63,62 +75,24 @@
             <div class="email-list">
                 @foreach (var email in emails)
                 {
-                    <div
-                        class="email-item @(email.IsRead ? "read" : "unread") @(selectedEmails.Contains(email.Id) ? "selected" : "") @(userSettings.UseCompactMode ? "compact" : "")"
-                        @onclick="() => SelectEmail(email.Id)">
-                        <div class="email-checkbox">
-                            <input type="checkbox" class="form-check-input"
-                                   checked="@selectedEmails.Contains(email.Id)"
-                                   @onchange="(e) => ToggleEmailSelection(email.Id, (bool)e.Value!)"
-                                   @onclick:stopPropagation="true">
-                        </div>
-
-                        <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email.Id)"
-                             @onclick:stopPropagation="true">
-                            <div class="email-header d-flex justify-content-between align-items-start">
-                                <div class="email-sender">
-                                    @if (userSettings.EmailDisplayMode == EmailDisplayMode.TitleSender || userSettings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)
-                                    {
-                                        <strong class="sender-name">@GetSenderName(email.From)</strong>
-                                        <span class="sender-email text-muted ms-1">@GetSenderEmail(email.From)</span>
-                                    }
-                                </div>
-                                <div class="email-meta text-muted">
-                                    <span class="email-date">@FormatDate(email.DateReceived)</span>
-                                    @if (email.HasAttachments)
-                                    {
-                                        <i class="fas fa-paperclip ms-2"></i>
-                                    }
-                                    @if (email.IsImportant)
-                                    {
-                                        <i class="fas fa-star text-warning ms-2"></i>
-                                    }
-                                </div>
-                            </div>
-
-                            <div class="email-subject @(userSettings.UseCompactMode ? "mb-1" : "")">
-                                @HtmlUtilityService.StripHtml(email.Subject)
-                            </div>
-
-                            @if (userSettings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview && userSettings.ShowEmailPreview)
-                            {
-                                <div class="email-preview text-muted @(userSettings.UseCompactMode ? "small" : "")">
-                                    @GetEmailPreview(email)
-                                </div>
-                            }
-                        </div>
-
-                        <div class="email-actions">
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleImportant(email.Id)"
-                                    @onclick:stopPropagation="true">
-                                <i class="fas fa-star @(email.IsImportant ? "text-warning" : "")"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmail(email.Id)"
-                                    @onclick:stopPropagation="true">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <EmailListItem Email="email"
+                                   IsSelected="selectedEmails.Contains(email.Id)"
+                                   IsCompact="userSettings.UseCompactMode"
+                                   DisplayMode="userSettings.EmailDisplayMode"
+                                   ShowPreview="userSettings.ShowEmailPreview"
+                                   UserSettings="userSettings"
+                                   OnSelectionChanged="ToggleEmailSelection"
+                                   OnEmailClick="ViewEmail"
+                                   OnToggleImportant="HandleToggleImportant"
+                                   OnToggleRead="HandleToggleRead"
+                                   OnArchive="HandleArchive"
+                                   OnDelete="HandleDelete"
+                                   OnMarkAsSpam="HandleMarkAsSpam"
+                                   OnReply="HandleReply"
+                                   OnReplyAll="HandleReplyAll"
+                                   OnForward="HandleForward"
+                                   OnOpen="ViewEmail"
+                                   OnOpenNewWindow="HandleOpenNewWindow" />
                 }
             </div>
 
@@ -244,7 +218,7 @@
         }
     }
 
-    private void SelectEmail(int emailId)
+    private void ToggleEmailSelection(int emailId)
     {
         if (selectedEmails.Contains(emailId))
         {
@@ -254,23 +228,12 @@
         {
             selectedEmails.Add(emailId);
         }
-    }
-
-    private void ToggleEmailSelection(int emailId, bool isSelected)
-    {
-        if (isSelected)
-        {
-            selectedEmails.Add(emailId);
-        }
-        else
-        {
-            selectedEmails.Remove(emailId);
-        }
+        StateHasChanged();
     }
 
     private void SelectAll()
     {
-        if (selectedEmails.Count == emails.Count)
+        if (selectedEmails.Count == emails.Count && emails.Any())
         {
             selectedEmails.Clear();
         }
@@ -278,35 +241,82 @@
         {
             selectedEmails = emails.Select(e => e.Id).ToHashSet();
         }
+        StateHasChanged();
     }
 
-    private async Task DeleteSelected()
+    private void ClearSelection()
     {
-        if (!selectedEmails.Any()) return;
+        selectedEmails.Clear();
+        StateHasChanged();
+    }
 
+    // Enhanced action handlers
+    private async Task HandleToggleImportant(int emailId)
+    {
         try
         {
-            foreach (var emailId in selectedEmails)
+            await EmailService.ToggleImportantAsync(emailId);
+            var email = emails.FirstOrDefault(e => e.Id == emailId);
+            if (email != null)
             {
-                await EmailService.DeleteEmailAsync(emailId);
+                email.IsImportant = !email.IsImportant;
+                StateHasChanged();
             }
-
-            emails.RemoveAll(e => selectedEmails.Contains(e.Id));
-            selectedEmails.Clear();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting emails: {ex.Message}");
+            Console.WriteLine($"Error toggling importance: {ex.Message}");
         }
     }
 
-    private async Task DeleteEmail(int emailId)
+    private async Task HandleToggleRead(int emailId)
+    {
+        try
+        {
+            var email = emails.FirstOrDefault(e => e.Id == emailId);
+            if (email != null)
+            {
+                if (email.IsRead)
+                {
+                    await EmailService.MarkAsUnreadAsync(emailId);
+                }
+                else
+                {
+                    await EmailService.MarkAsReadAsync(emailId);
+                }
+                email.IsRead = !email.IsRead;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling read status: {ex.Message}");
+        }
+    }
+
+    private async Task HandleArchive(int emailId)
+    {
+        try
+        {
+            await EmailService.ArchiveEmailAsync(emailId);
+            emails.RemoveAll(e => e.Id == emailId);
+            selectedEmails.Remove(emailId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error archiving email: {ex.Message}");
+        }
+    }
+
+    private async Task HandleDelete(int emailId)
     {
         try
         {
             await EmailService.DeleteEmailAsync(emailId);
             emails.RemoveAll(e => e.Id == emailId);
             selectedEmails.Remove(emailId);
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -314,13 +324,173 @@
         }
     }
 
-    private void ToggleImportant(int emailId)
+    private async Task HandleMarkAsSpam(int emailId)
+    {
+        try
+        {
+            await EmailService.MarkAsSpamAsync(emailId);
+            emails.RemoveAll(e => e.Id == emailId);
+            selectedEmails.Remove(emailId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking as spam: {ex.Message}");
+        }
+    }
+
+    private void HandleReply(int emailId)
     {
         var email = emails.FirstOrDefault(e => e.Id == emailId);
         if (email != null)
         {
-            email.IsImportant = !email.IsImportant;
-            // TODO: Update in database
+            var replySubject = email.Subject.StartsWith("Re: ") ? email.Subject : $"Re: {email.Subject}";
+            Navigation.NavigateTo($"/compose?reply={emailId}&subject={Uri.EscapeDataString(replySubject)}&to={Uri.EscapeDataString(GetSenderEmail(email.From))}");
+        }
+    }
+
+    private void HandleReplyAll(int emailId)
+    {
+        var email = emails.FirstOrDefault(e => e.Id == emailId);
+        if (email != null)
+        {
+            var replySubject = email.Subject.StartsWith("Re: ") ? email.Subject : $"Re: {email.Subject}";
+            var allRecipients = new List<string> { GetSenderEmail(email.From) };
+
+            if (!string.IsNullOrEmpty(email.To))
+            {
+                allRecipients.AddRange(email.To.Split(',').Select(r => r.Trim()));
+            }
+
+            var recipients = string.Join(";", allRecipients.Where(r => !string.IsNullOrEmpty(r)).Distinct());
+            Navigation.NavigateTo($"/compose?replyall={emailId}&subject={Uri.EscapeDataString(replySubject)}&to={Uri.EscapeDataString(recipients)}");
+        }
+    }
+
+    private void HandleForward(int emailId)
+    {
+        var email = emails.FirstOrDefault(e => e.Id == emailId);
+        if (email != null)
+        {
+            var forwardSubject = email.Subject.StartsWith("Fwd: ") ? email.Subject : $"Fwd: {email.Subject}";
+            Navigation.NavigateTo($"/compose?forward={emailId}&subject={Uri.EscapeDataString(forwardSubject)}");
+        }
+    }
+
+    private void HandleOpenNewWindow(int emailId)
+    {
+        Navigation.NavigateTo($"/email/{emailId}", forceLoad: true);
+    }
+
+    // Bulk action handlers
+    private async Task HandleBulkMarkAsRead(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.MarkAsReadAsync(emailId);
+                var email = emails.FirstOrDefault(e => e.Id == emailId);
+                if (email != null) email.IsRead = true;
+            }
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking emails as read: {ex.Message}");
+        }
+    }
+
+    private async Task HandleBulkMarkAsUnread(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.MarkAsUnreadAsync(emailId);
+                var email = emails.FirstOrDefault(e => e.Id == emailId);
+                if (email != null) email.IsRead = false;
+            }
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking emails as unread: {ex.Message}");
+        }
+    }
+
+    private async Task HandleBulkToggleImportant(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.ToggleImportantAsync(emailId);
+                var email = emails.FirstOrDefault(e => e.Id == emailId);
+                if (email != null) email.IsImportant = !email.IsImportant;
+            }
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling importance: {ex.Message}");
+        }
+    }
+
+    private async Task HandleBulkArchive(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.ArchiveEmailAsync(emailId);
+            }
+            emails.RemoveAll(e => emailIds.Contains(e.Id));
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error archiving emails: {ex.Message}");
+        }
+    }
+
+    private async Task HandleBulkMarkAsSpam(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.MarkAsSpamAsync(emailId);
+            }
+            emails.RemoveAll(e => emailIds.Contains(e.Id));
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking emails as spam: {ex.Message}");
+        }
+    }
+
+    private async Task HandleBulkDelete(List<int> emailIds)
+    {
+        try
+        {
+            foreach (var emailId in emailIds)
+            {
+                await EmailService.DeleteEmailAsync(emailId);
+            }
+            emails.RemoveAll(e => emailIds.Contains(e.Id));
+            selectedEmails.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting emails: {ex.Message}");
         }
     }
 
@@ -331,6 +501,7 @@
         {
             await EmailService.MarkAsReadAsync(emailId);
             email.IsRead = true;
+            StateHasChanged();
         }
 
         // Navigate based on user's layout preference

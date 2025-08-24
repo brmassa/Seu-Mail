@@ -355,6 +355,33 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
+    /// Toggles the importance flag of an email.
+    /// </summary>
+    /// <param name="emailId">The database ID of the email.</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains true if successful.</returns>
+    public async Task<bool> ToggleImportantAsync(int emailId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var email = await _context.EmailMessages.FindAsync(emailId);
+            if (email != null)
+            {
+                email.IsImportant = !email.IsImportant;
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling importance for email {EmailId}", emailId);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Moves an email to the trash/deleted items folder.
     /// </summary>
     /// <param name="emailId">The database ID of the email to delete.</param>

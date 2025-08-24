@@ -144,6 +144,14 @@ public interface IEmailService
     Task<bool> SetImportantAsync(int emailId, bool isImportant, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Toggles the importance flag of an email
+    /// </summary>
+    /// <param name="emailId">Email ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if successful</returns>
+    Task<bool> ToggleImportantAsync(int emailId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Deletes an email (moves to trash)
     /// </summary>
     /// <param name="emailId">Email ID</param>

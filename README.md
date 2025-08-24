@@ -73,19 +73,13 @@ users with privacy-focused, self-hosted communication tools.
    cd Seu-Mail
    ```
 
-2. **Restore dependencies**
+2. **Run the web application**
    ```bash
-   dotnet restore
+   dotnet run --project Seu.Mail.Web
    ```
 
-3. **Run the web application**
-   ```bash
-   cd Seu.Mail.Web
-   dotnet run
-   ```
-
-4. **Open in browser**
-    - Navigate to `https://localhost:7000` or the URL shown in the console
+3. **Open in browser**
+    - Navigate to `https://localhost:5000` or the URL shown in the console
     - The application will create the database automatically on first run
 
 ## 📱 Usage
@@ -107,15 +101,6 @@ users with privacy-focused, self-hosted communication tools.
 | Gmail    | imap.gmail.com        | smtp.gmail.com        | 993/587 | SSL/TLS  |
 | Outlook  | outlook.office365.com | smtp-mail.outlook.com | 993/587 | SSL/TLS  |
 | Yahoo    | imap.mail.yahoo.com   | smtp.mail.yahoo.com   | 993/587 | SSL/TLS  |
-
-### Gmail Setup (2FA Enabled)
-
-1. Enable 2-Factor Authentication in your Google Account
-2. Generate an App Password:
-    - Go to **Google Account Settings** → **Security**
-    - Select **2-Step Verification** → **App passwords**
-    - Choose **Mail** as the app type
-3. Use the generated 16-character password in Seu Mail
 
 ## ⚙️ Configuration
 
@@ -155,51 +140,6 @@ Customize your experience through the Settings page:
 - **Sync Settings**: Automatic sync intervals and email limits
 - **Notifications**: Email and calendar notification preferences
 
-## 🏗️ Architecture
-
-### Project Structure
-
-```
-Seu.Mail/
-├── src/                          # Source code projects
-│   ├── Seu.Mail.Core/           # Domain models and entities
-│   │   ├── Models/              # Core domain models
-│   │   │   ├── EmailMessage.cs
-│   │   │   ├── EmailAccount.cs
-│   │   │   └── EmailAttachment.cs
-│   │   └── Enums/               # Domain enumerations
-│   │       └── EmailEnums.cs
-│   ├── Seu.Mail.Contracts/      # Service interfaces and DTOs
-│   │   └── Services/            # Service contracts
-│   │       ├── IEmailService.cs
-│   │       ├── IAccountService.cs
-│   │       └── ICalendarService.cs
-│   ├── Seu.Mail.Data/           # Data access layer
-│   │   ├── Context/             # Entity Framework context
-│   │   ├── Repositories/        # Repository implementations
-│   │   └── Migrations/          # Database migrations
-│   ├── Seu.Mail.Services/       # Business logic implementation
-│   │   ├── EmailService.cs      # Email operations (IMAP/SMTP)
-│   │   ├── AccountService.cs    # Account management
-│   │   └── ValidationService.cs # Input validation
-│   ├── Seu.Mail.Calendar/       # Calendar module (pluggable)
-│   │   ├── Models/              # Calendar-specific models
-│   │   ├── Services/            # Calendar business logic
-│   │   └── Contracts/           # Calendar interfaces
-│   ├── Seu.Mail.Shared/         # Common utilities and helpers
-│   │   ├── Extensions/          # Extension methods
-│   │   ├── Utilities/           # Helper classes
-│   │   └── Constants/           # Application constants
-│   └── Seu.Mail.Web/            # Blazor Server web application
-│       ├── Components/          # Blazor components
-│       ├── Pages/               # Web pages
-│       ├── wwwroot/             # Static web assets
-│       └── Program.cs           # Web app entry point
-├── tests/                       # Test projects
-│   ├── Seu.Mail.Tests.Unit/     # Unit tests
-│   └── Seu.Mail.Tests.Integration/ # Integration tests
-└── Seu.Mail.sln                # Solution file
-```
 
 ### Key Technologies
 
@@ -232,7 +172,7 @@ When modifying data models in `Seu.Mail.Data`:
 
 ```bash
 # Navigate to the data project
-cd src/Seu.Mail.Data
+cd Seu.Mail.Data
 
 # Add migration
 dotnet ef migrations add YourMigrationName
@@ -241,7 +181,7 @@ dotnet ef migrations add YourMigrationName
 dotnet ef database update
 
 # Or from solution root
-dotnet ef migrations add YourMigrationName --project src/Seu.Mail.Data --startup-project src/Seu.Mail.Web
+dotnet ef migrations add YourMigrationName --project Seu.Mail.Data --startup-project Seu.Mail.Web
 ```
 
 ### Building for Production
@@ -251,10 +191,10 @@ dotnet ef migrations add YourMigrationName --project src/Seu.Mail.Data --startup
 dotnet build -c Release
 
 # Publish web application
-dotnet publish src/Seu.Mail.Web -c Release -o ./publish
+dotnet publish Seu.Mail.Web -c Release -o ./publish
 
 # Build specific project
-dotnet build src/Seu.Mail.Services -c Release
+dotnet build Seu.Mail.Services -c Release
 ```
 
 ### Development Guidelines

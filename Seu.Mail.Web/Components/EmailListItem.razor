@@ -1,0 +1,316 @@
+@using Seu.Mail.Core.Models
+@using Seu.Mail.Core.Enums
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="email-item @(Email.IsRead ? "read" : "unread") @(IsSelected ? "selected" : "") @(IsCompact ? "compact" : "")"
+     @onclick="HandleClick"
+     @oncontextmenu="HandleRightClick"
+     @oncontextmenu:preventDefault="true"
+     @onmouseenter="ShowActions"
+     @onmouseleave="HideActions">
+
+    <div class="email-checkbox">
+        <input type="checkbox" class="form-check-input"
+               checked="@IsSelected"
+               @onchange="HandleSelectionChange"
+               @onclick:stopPropagation="true">
+    </div>
+
+    <div class="email-content flex-grow-1" @onclick="HandleEmailClick" @onclick:stopPropagation="true">
+        <div class="email-header d-flex justify-content-between align-items-start">
+            <div class="email-sender">
+                @if (DisplayMode == EmailDisplayMode.TitleSender || DisplayMode == EmailDisplayMode.TitleSenderPreview)
+                {
+                    <strong class="sender-name">@GetSenderName(Email.From)</strong>
+                    <span class="sender-email text-muted ms-1">@GetSenderEmail(Email.From)</span>
+                }
+            </div>
+            <div class="email-meta text-muted">
+                <span class="email-date">@FormatDate(Email.DateReceived)</span>
+                @if (Email.HasAttachments)
+                {
+                    <i class="fas fa-paperclip ms-2"></i>
+                }
+                @if (Email.IsImportant)
+                {
+                    <i class="fas fa-star text-warning ms-2"></i>
+                }
+            </div>
+        </div>
+
+        <div class="email-subject @(IsCompact ? "mb-1" : "")">
+            @HtmlUtilityService.StripHtml(Email.Subject)
+        </div>
+
+        @if (DisplayMode == EmailDisplayMode.TitleSenderPreview && ShowPreview)
+        {
+            <div class="email-preview text-muted @(IsCompact ? "small" : "")">
+                @GetEmailPreview(Email)
+            </div>
+        }
+    </div>
+
+    <div class="email-actions @(showActions ? "show" : "")" @onclick:stopPropagation="true">
+        <button class="btn btn-sm btn-outline-secondary"
+                @onclick="() => OnToggleImportant.InvokeAsync(Email.Id)"
+                title="@(Email.IsImportant ? "Remove star" : "Add star")">
+            <i class="fas fa-star @(Email.IsImportant ? "text-warning" : "")"></i>
+        </button>
+
+        <button class="btn btn-sm btn-outline-primary"
+                @onclick="() => OnToggleRead.InvokeAsync(Email.Id)"
+                title="@(Email.IsRead ? "Mark as unread" : "Mark as read")">
+            <i class="fas @(Email.IsRead ? "fa-envelope" : "fa-envelope-open")"></i>
+        </button>
+
+        <button class="btn btn-sm btn-outline-secondary"
+                @onclick="() => OnArchive.InvokeAsync(Email.Id)"
+                title="Archive">
+            <i class="fas fa-archive"></i>
+        </button>
+
+        <button class="btn btn-sm btn-outline-danger"
+                @onclick="() => OnDelete.InvokeAsync(Email.Id)"
+                title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Context Menu -->
+@if (showContextMenu)
+{
+    <div class="email-context-menu"
+         style="position: fixed; top: @(contextMenuY)px; left: @(contextMenuX)px; z-index: 1050;"
+         @onclick:stopPropagation="true">
+        <div class="dropdown-menu show">
+            <button class="dropdown-item d-flex align-items-center" @onclick="HandleReply">
+                <i class="fas fa-reply me-2"></i>
+                Reply
+            </button>
+            <button class="dropdown-item d-flex align-items-center" @onclick="HandleReplyAll">
+                <i class="fas fa-reply-all me-2"></i>
+                Reply All
+            </button>
+            <button class="dropdown-item d-flex align-items-center" @onclick="HandleForward">
+                <i class="fas fa-share me-2"></i>
+                Forward
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item d-flex align-items-center" @onclick="() => OnArchive.InvokeAsync(Email.Id)">
+                <i class="fas fa-archive me-2"></i>
+                Archive
+            </button>
+            <button class="dropdown-item d-flex align-items-center" @onclick="() => OnToggleImportant.InvokeAsync(Email.Id)">
+                <i class="fas fa-star me-2 @(Email.IsImportant ? "text-warning" : "")"></i>
+                @(Email.IsImportant ? "Remove star" : "Add star")
+            </button>
+            <button class="dropdown-item d-flex align-items-center" @onclick="() => OnToggleRead.InvokeAsync(Email.Id)">
+                <i class="fas @(Email.IsRead ? "fa-envelope" : "fa-envelope-open") me-2"></i>
+                Mark as @(Email.IsRead ? "unread" : "read")
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item d-flex align-items-center" @onclick="() => OnMarkAsSpam.InvokeAsync(Email.Id)">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Mark as spam
+            </button>
+            <button class="dropdown-item d-flex align-items-center text-danger" @onclick="() => OnDelete.InvokeAsync(Email.Id)">
+                <i class="fas fa-trash me-2"></i>
+                Delete
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item d-flex align-items-center" @onclick="HandleOpen">
+                <i class="fas fa-external-link-alt me-2"></i>
+                Open
+            </button>
+            <button class="dropdown-item d-flex align-items-center" @onclick="HandleOpenNewWindow">
+                <i class="fas fa-window-restore me-2"></i>
+                Open in new window
+            </button>
+        </div>
+    </div>
+
+    <!-- Backdrop to close context menu -->
+    <div class="email-context-backdrop" @onclick="CloseContextMenu"></div>
+}
+
+@code {
+    [Parameter] public EmailMessage Email { get; set; } = null!;
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public EmailDisplayMode DisplayMode { get; set; } = EmailDisplayMode.TitleSenderPreview;
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public UserSettings UserSettings { get; set; } = new();
+
+    [Parameter] public EventCallback<int> OnSelectionChanged { get; set; }
+    [Parameter] public EventCallback<int> OnEmailClick { get; set; }
+    [Parameter] public EventCallback<int> OnToggleImportant { get; set; }
+    [Parameter] public EventCallback<int> OnToggleRead { get; set; }
+    [Parameter] public EventCallback<int> OnArchive { get; set; }
+    [Parameter] public EventCallback<int> OnDelete { get; set; }
+    [Parameter] public EventCallback<int> OnMarkAsSpam { get; set; }
+    [Parameter] public EventCallback<int> OnReply { get; set; }
+    [Parameter] public EventCallback<int> OnReplyAll { get; set; }
+    [Parameter] public EventCallback<int> OnForward { get; set; }
+    [Parameter] public EventCallback<int> OnOpen { get; set; }
+    [Parameter] public EventCallback<int> OnOpenNewWindow { get; set; }
+
+    [Inject] private IHtmlUtilityService HtmlUtilityService { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private bool showActions = false;
+    private bool showContextMenu = false;
+    private double contextMenuX = 0;
+    private double contextMenuY = 0;
+
+    private void ShowActions() => showActions = true;
+    private void HideActions() => showActions = false;
+
+    private async Task HandleClick(MouseEventArgs e)
+    {
+        if (e.CtrlKey || e.MetaKey)
+        {
+            await OnSelectionChanged.InvokeAsync(Email.Id);
+        }
+        else
+        {
+            await OnEmailClick.InvokeAsync(Email.Id);
+        }
+    }
+
+    private async Task HandleEmailClick()
+    {
+        await OnEmailClick.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleSelectionChange(ChangeEventArgs e)
+    {
+        await OnSelectionChanged.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleRightClick(MouseEventArgs e)
+    {
+        contextMenuX = e.ClientX;
+        contextMenuY = e.ClientY;
+        showContextMenu = true;
+        StateHasChanged();
+
+        // Use the JavaScript utilities for context menu handling
+        await JSRuntime.InvokeVoidAsync("emailListUtils.addContextMenuListener", DotNetObjectReference.Create(this));
+    }
+
+    private void CloseContextMenu()
+    {
+        showContextMenu = false;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void CloseContextMenuFromJs()
+    {
+        CloseContextMenu();
+    }
+
+    private async Task HandleReply()
+    {
+        CloseContextMenu();
+        await OnReply.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleReplyAll()
+    {
+        CloseContextMenu();
+        await OnReplyAll.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleForward()
+    {
+        CloseContextMenu();
+        await OnForward.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleOpen()
+    {
+        CloseContextMenu();
+        await OnOpen.InvokeAsync(Email.Id);
+    }
+
+    private async Task HandleOpenNewWindow()
+    {
+        CloseContextMenu();
+        await OnOpenNewWindow.InvokeAsync(Email.Id);
+    }
+
+    private string GetSenderName(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "Unknown";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"^(.+?)\s*<");
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim('"');
+        }
+
+        return from.Split('@')[0];
+    }
+
+    private string GetSenderEmail(string from)
+    {
+        if (string.IsNullOrEmpty(from)) return "";
+
+        var match = System.Text.RegularExpressions.Regex.Match(from, @"<(.+?)>");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        return from;
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        var now = DateTime.Now;
+        var diff = now - date;
+
+        if (diff.TotalDays < 1 && date.Date == now.Date)
+        {
+            return date.ToString("HH:mm");
+        }
+        else if (diff.TotalDays < 7)
+        {
+            return date.ToString("ddd");
+        }
+        else if (diff.TotalDays < 365)
+        {
+            return date.ToString("MMM dd");
+        }
+        else
+        {
+            return date.ToString("MMM dd, yyyy");
+        }
+    }
+
+    private string GetEmailPreview(EmailMessage email)
+    {
+        var content = !string.IsNullOrEmpty(email.TextBody) ? email.TextBody : email.HtmlBody;
+        if (string.IsNullOrEmpty(content)) return "";
+
+        // Remove HTML tags if present
+        var preview = System.Text.RegularExpressions.Regex.Replace(content, "<.*?>", "");
+
+        // Limit to 100 characters
+        if (preview.Length > 100)
+        {
+            preview = preview.Substring(0, 100) + "...";
+        }
+
+        return preview;
+    }
+
+    public void Dispose()
+    {
+        // Clean up event listeners using JavaScript utilities
+        JSRuntime.InvokeVoidAsync("emailListUtils.removeContextMenuListener");
+    }
+}

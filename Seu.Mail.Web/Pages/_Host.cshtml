@@ -5,4 +5,7 @@
     Layout = "_Layout";
 }
 
+<!-- Ensure email-list.js is loaded before Blazor starts for JSInterop -->
+<script src="~/js/email-list.js"></script>
+
 <component type="typeof(App)" render-mode="ServerPrerendered"/>
