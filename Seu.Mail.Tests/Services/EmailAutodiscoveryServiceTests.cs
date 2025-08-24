@@ -717,6 +717,100 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 
     #endregion
 
+    #region Performance Tests
+
+    [Test]
+    public async Task AutodiscoverAsync_WithMockedResponses_ShouldCompleteUnder100ms()
+    {
+        // Arrange
+        var testDomains = new[]
+        {
+            "performance1.com",
+            "performance2.com",
+            "performance3.com"
+        };
+
+        // Setup mock responses for all test domains to fail quickly
+        foreach (var domain in testDomains)
+        {
+            _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml", null);
+            _mockHttpClient.SetupGetResponse($"https://autoconfig.{domain}/mail/config-v1.1.xml", null);
+        }
+
+        var startTime = DateTime.UtcNow;
+
+        // Act - Test multiple domains in sequence
+        foreach (var domain in testDomains)
+        {
+            await _autodiscoveryService.AutodiscoverAsync($"test@{domain}");
+        }
+
+        // Assert
+        var totalDuration = DateTime.UtcNow - startTime;
+        await Assert.That(totalDuration.TotalMilliseconds).IsLessThan(100); // Should complete very quickly
+
+        // Verify mock was used (should have made HTTP requests)
+        await Assert.That(_mockHttpClient.RequestHistory.Count).IsGreaterThan(0);
+    }
+
+    [Test]
+    public async Task AllAutodiscoveryMethods_WithMockedFailures_ShouldCompleteRapidly()
+    {
+        // This test demonstrates that all autodiscovery methods complete quickly
+        // when using mocked HTTP responses, compared to real network timeouts
+
+        // Arrange
+        var testDomain = "rapid-test.example";
+        var testEmail = $"user@{testDomain}";
+
+        // Setup all mock responses to return null (simulate failures)
+        var autodiscoverUrls = new[]
+        {
+            $"https://autodiscover.{testDomain}/autodiscover/autodiscover.xml",
+            $"https://{testDomain}/autodiscover/autodiscover.xml",
+            $"https://autodiscover.{testDomain}/Autodiscover/Autodiscover.xml",
+            "https://autodiscover-s.outlook.com/autodiscover/autodiscover.xml"
+        };
+
+        var autoconfigUrls = new[]
+        {
+            $"https://autoconfig.{testDomain}/mail/config-v1.1.xml",
+            $"https://{testDomain}/.well-known/autoconfig/mail/config-v1.1.xml"
+        };
+
+        foreach (var url in autodiscoverUrls)
+        {
+            _mockHttpClient.SetupPostResponse(url, null);
+        }
+
+        foreach (var url in autoconfigUrls)
+        {
+            _mockHttpClient.SetupGetResponse(url, null);
+        }
+
+        var startTime = DateTime.UtcNow;
+
+        // Act - Try all autodiscovery methods
+        var outlookResult = await _autodiscoveryService.TryOutlookAutodiscoverAsync(testEmail);
+        var mozillaResult = await _autodiscoveryService.TryMozillaAutoconfigAsync(testDomain);
+        var appleResult = await _autodiscoveryService.TryAppleAutoconfigAsync(testDomain);
+        var wellKnownResult = await _autodiscoveryService.TryWellKnownAutoconfigAsync(testDomain);
+
+        var duration = DateTime.UtcNow - startTime;
+
+        // Assert
+        await Assert.That(duration.TotalMilliseconds).IsLessThan(500); // All methods should complete in under 500ms
+        await Assert.That(outlookResult).IsNull(); // All should fail as expected
+        await Assert.That(mozillaResult).IsNull();
+        await Assert.That(appleResult).IsNull();
+        await Assert.That(wellKnownResult).IsNull();
+
+        // Verify we made the expected number of HTTP calls through our mock
+        await Assert.That(_mockHttpClient.RequestHistory.Count).IsGreaterThan(5);
+    }
+
+    #endregion
+
     public async ValueTask DisposeAsync()
     {
         _mockHttpClient?.Reset();

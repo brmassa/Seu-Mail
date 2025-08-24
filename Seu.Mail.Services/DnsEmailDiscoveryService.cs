@@ -12,17 +12,17 @@ namespace Seu.Mail.Services;
 public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
 {
     private readonly ILogger<DnsEmailDiscoveryService> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly IDnsHttpClient _dnsHttpClient;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DnsEmailDiscoveryService"/> class.
     /// </summary>
     /// <param name="logger">Logger for DNS discovery events and errors.</param>
-    /// <param name="httpClient">HTTP client for DNS queries.</param>
-    public DnsEmailDiscoveryService(ILogger<DnsEmailDiscoveryService> logger, HttpClient httpClient)
+    /// <param name="dnsHttpClient">DNS HTTP client for DNS-over-HTTPS queries.</param>
+    public DnsEmailDiscoveryService(ILogger<DnsEmailDiscoveryService> logger, IDnsHttpClient dnsHttpClient)
     {
         _logger = logger;
-        _httpClient = httpClient;
+        _dnsHttpClient = dnsHttpClient;
     }
 
     /// <summary>
@@ -236,7 +236,12 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
             var url = $"https://dns.google/resolve?name={domain}&type=MX";
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var response = await _httpClient.GetStringAsync(url, cts.Token);
+            var response = await _dnsHttpClient.GetStringAsync(url, cts.Token);
+
+            if (string.IsNullOrEmpty(response))
+            {
+                return new List<string>();
+            }
 
             // Parse the JSON response (simple regex parsing)
             var mxPattern = new Regex(@"""data""\s*:\s*""[^""]*\s+([^""]+)""", RegexOptions.IgnoreCase);
