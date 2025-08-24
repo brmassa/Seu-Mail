@@ -175,18 +175,22 @@ public class CalendarEvent
     /// Navigation property to the associated email account.
     /// </summary>
     public virtual EmailAccount? Account { get; set; }
+
     /// <summary>
     /// Navigation property to the master event for recurring event instances.
     /// </summary>
     public virtual CalendarEvent? MasterEvent { get; set; }
+
     /// <summary>
     /// Navigation property to child recurring event instances.
     /// </summary>
     public virtual ICollection<CalendarEvent> RecurrenceInstances { get; set; } = new List<CalendarEvent>();
+
     /// <summary>
     /// Navigation property to event reminders.
     /// </summary>
     public virtual ICollection<EventReminder> Reminders { get; set; } = new List<EventReminder>();
+
     /// <summary>
     /// Navigation property to event attendees.
     /// </summary>

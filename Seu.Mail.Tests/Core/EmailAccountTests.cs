@@ -162,9 +162,9 @@ public class EmailAccountTests
     // Port Configuration Tests
 
     [Test]
-    [Arguments(25, 143)]    // SMTP/IMAP standard
-    [Arguments(465, 993)]   // SSL ports
-    [Arguments(587, 995)]   // TLS/POP3 ports
+    [Arguments(25, 143)] // SMTP/IMAP standard
+    [Arguments(465, 993)] // SSL ports
+    [Arguments(587, 995)] // TLS/POP3 ports
     public async Task EmailAccount_WithValidPorts_ShouldBeValid(int smtpPort, int imapPort)
     {
         // Arrange
@@ -184,7 +184,9 @@ public class EmailAccountTests
         // Assert
         await Assert.That(account.SmtpPort).IsEqualTo(smtpPort);
         await Assert.That(account.ImapPort).IsEqualTo(imapPort);
-        await Assert.That(validationResults.Where(r => r.MemberNames.Contains("SmtpPort") || r.MemberNames.Contains("ImapPort"))).IsEmpty();
+        await Assert
+            .That(validationResults.Where(r =>
+                r.MemberNames.Contains("SmtpPort") || r.MemberNames.Contains("ImapPort"))).IsEmpty();
     }
 
     // SSL Configuration Tests
@@ -245,7 +247,7 @@ public class EmailAccountTests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         // Act
-        for (int i = 0; i < 1000; i++)
+        for (var i = 0; i < 1000; i++)
         {
             var account = new EmailAccount
             {
@@ -255,6 +257,7 @@ public class EmailAccountTests
                 ImapServer = "imap.example.com"
             };
         }
+
         stopwatch.Stop();
 
         // Assert
@@ -263,9 +266,9 @@ public class EmailAccountTests
 
     // Helper Methods
 
-    private static List<System.ComponentModel.DataAnnotations.ValidationResult> ValidateModel(object model)
+    private static List<ValidationResult> ValidateModel(object model)
     {
-        var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationResults = new List<ValidationResult>();
         var validationContext = new ValidationContext(model);
         Validator.TryValidateObject(model, validationContext, validationResults, true);
         return validationResults;

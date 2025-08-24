@@ -1,0 +1,144 @@
+@using Seu.Mail.Core.Enums
+@inject IJSRuntime JSRuntime
+
+<div class="email-bulk-actions @(SelectedEmailIds.Any() ? "show" : "hide")">
+    <div class="bulk-actions-container bg-primary text-white px-3 py-2 d-flex justify-content-between align-items-center">
+        <div class="selected-count">
+            <i class="fas fa-check-square me-2"></i>
+            @SelectedEmailIds.Count email@(SelectedEmailIds.Count != 1 ? "s" : "") selected
+        </div>
+
+        <div class="bulk-actions d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleMarkAsRead"
+                    title="Mark as read">
+                <i class="fas fa-envelope-open"></i>
+                <span class="d-none d-md-inline ms-1">Read</span>
+            </button>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleMarkAsUnread"
+                    title="Mark as unread">
+                <i class="fas fa-envelope"></i>
+                <span class="d-none d-md-inline ms-1">Unread</span>
+            </button>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleToggleImportant"
+                    title="Toggle important">
+                <i class="fas fa-star"></i>
+                <span class="d-none d-md-inline ms-1">Star</span>
+            </button>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleArchive"
+                    title="Archive">
+                <i class="fas fa-archive"></i>
+                <span class="d-none d-md-inline ms-1">Archive</span>
+            </button>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleMarkAsSpam"
+                    title="Mark as spam">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span class="d-none d-md-inline ms-1">Spam</span>
+            </button>
+
+            <button class="btn btn-outline-danger btn-sm"
+                    @onclick="HandleDelete"
+                    title="Delete">
+                <i class="fas fa-trash"></i>
+                <span class="d-none d-md-inline ms-1">Delete</span>
+            </button>
+
+            <div class="vr d-none d-md-block"></div>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleSelectAll"
+                    title="Select all">
+                <i class="fas fa-check-double"></i>
+                <span class="d-none d-md-inline ms-1">All</span>
+            </button>
+
+            <button class="btn btn-outline-light btn-sm"
+                    @onclick="HandleClearSelection"
+                    title="Clear selection">
+                <i class="fas fa-times"></i>
+                <span class="d-none d-md-inline ms-1">Clear</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public HashSet<int> SelectedEmailIds { get; set; } = new();
+    [Parameter] public int TotalEmailCount { get; set; }
+
+    [Parameter] public EventCallback<List<int>> OnMarkAsRead { get; set; }
+    [Parameter] public EventCallback<List<int>> OnMarkAsUnread { get; set; }
+    [Parameter] public EventCallback<List<int>> OnToggleImportant { get; set; }
+    [Parameter] public EventCallback<List<int>> OnArchive { get; set; }
+    [Parameter] public EventCallback<List<int>> OnMarkAsSpam { get; set; }
+    [Parameter] public EventCallback<List<int>> OnDelete { get; set; }
+    [Parameter] public EventCallback OnSelectAll { get; set; }
+    [Parameter] public EventCallback OnClearSelection { get; set; }
+
+    private async Task HandleMarkAsRead()
+    {
+        if (!await ConfirmBulkAction("mark as read")) return;
+        await OnMarkAsRead.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleMarkAsUnread()
+    {
+        if (!await ConfirmBulkAction("mark as unread")) return;
+        await OnMarkAsUnread.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleToggleImportant()
+    {
+        if (!await ConfirmBulkAction("toggle star")) return;
+        await OnToggleImportant.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleArchive()
+    {
+        if (!await ConfirmBulkAction("archive")) return;
+        await OnArchive.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleMarkAsSpam()
+    {
+        if (!await ConfirmBulkAction("mark as spam")) return;
+        await OnMarkAsSpam.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleDelete()
+    {
+        if (!await ConfirmBulkAction("delete", true)) return;
+        await OnDelete.InvokeAsync(SelectedEmailIds.ToList());
+    }
+
+    private async Task HandleSelectAll()
+    {
+        await OnSelectAll.InvokeAsync();
+    }
+
+    private async Task HandleClearSelection()
+    {
+        await OnClearSelection.InvokeAsync();
+    }
+
+    private async Task<bool> ConfirmBulkAction(string action, bool isDestructive = false)
+    {
+        var count = SelectedEmailIds.Count;
+        var message = $"Are you sure you want to {action} {count} email{(count != 1 ? "s" : "")}?";
+
+        if (isDestructive)
+        {
+            message = $"⚠️ {message}\n\nThis action cannot be undone.";
+        }
+
+        return await JSRuntime.InvokeAsync<bool>("confirm", message);
+    }
+}

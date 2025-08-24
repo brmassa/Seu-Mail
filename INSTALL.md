@@ -102,7 +102,7 @@ sc start SeuMail
    ```bash
    # Using Homebrew (recommended)
    brew install --cask dotnet
-   
+
    # Or download from Microsoft
    # https://dotnet.microsoft.com/download/dotnet/9.0
    ```
@@ -111,7 +111,7 @@ sc start SeuMail
    ```bash
    # Git is usually pre-installed on macOS
    git --version
-   
+
    # If not installed, install Xcode Command Line Tools
    xcode-select --install
    ```
@@ -403,7 +403,7 @@ dotnet run --configuration Debug --verbosity diagnostic
 server {
     listen 80;
     server_name yourdomain.com;
-    
+
     location / {
         proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
@@ -430,7 +430,7 @@ WORKDIR /src
 COPY ["Mail/Seu.Mail.csproj", "Mail/"]
 RUN dotnet restore "Mail/Seu.Mail.csproj"
 COPY . .
-WORKDIR "/src/Mail"
+WORKDIR "/Mail"
 RUN dotnet build "Seu.Mail.csproj" -c Release -o /app/build
 
 FROM build AS publish

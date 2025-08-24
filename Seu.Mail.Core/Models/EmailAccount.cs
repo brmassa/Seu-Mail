@@ -235,19 +235,28 @@ public class EmailAccount
     /// Gets the display name or falls back to email address.
     /// </summary>
     /// <returns>The display name or email address.</returns>
-    public string GetDisplayName() => string.IsNullOrWhiteSpace(DisplayName) ? Email : DisplayName;
+    public string GetDisplayName()
+    {
+        return string.IsNullOrWhiteSpace(DisplayName) ? Email : DisplayName;
+    }
 
     /// <summary>
     /// Gets the username from the email address.
     /// </summary>
     /// <returns>The username part of the email address.</returns>
-    public string GetUsername() => Email.Split('@')[0];
+    public string GetUsername()
+    {
+        return Email.Split('@')[0];
+    }
 
     /// <summary>
     /// Gets the domain from the email address.
     /// </summary>
     /// <returns>The domain part of the email address.</returns>
-    public string GetDomain() => Email.Contains('@') ? Email.Split('@')[1] : string.Empty;
+    public string GetDomain()
+    {
+        return Email.Contains('@') ? Email.Split('@')[1] : string.Empty;
+    }
 
     /// <summary>
     /// Determines if the account needs attention (has errors or hasn't synced recently).

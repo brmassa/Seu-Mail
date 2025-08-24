@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
+
 - Email encryption (PGP/GPG support)
 - Advanced email rules and filters
 - Contact management system
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2024-12-XX
 
 ### Added
+
 - Calendar integration with event management
 - Multiple calendar support
 - Event reminders and notifications
@@ -43,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified inbox for multiple accounts
 
 ### Changed
+
 - Upgraded to .NET 9.0
 - Improved user interface with better responsiveness
 - Enhanced email synchronization performance
@@ -51,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated dependencies to latest versions
 
 ### Fixed
+
 - Email attachment download issues
 - Database migration problems
 - Memory leaks in email synchronization
@@ -60,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Various security vulnerabilities
 
 ### Security
+
 - Implemented password encryption for stored credentials
 - Enhanced input validation across all forms
 - Added CSRF protection to all state-changing operations
@@ -69,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2024-10-15
 
 ### Added
+
 - Multiple email account support
 - Gmail-like interface with modern design
 - Email composition with rich text editor
@@ -84,12 +90,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Font Awesome icons
 
 ### Changed
+
 - Improved email synchronization speed
 - Better error messages and user feedback
 - Enhanced database schema for better performance
 - Updated UI components for better accessibility
 
 ### Fixed
+
 - IMAP connection timeout issues
 - Email parsing errors with special characters
 - Database locking problems during sync
@@ -97,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory usage optimization
 
 ### Security
+
 - Added rate limiting for authentication attempts
 - Implemented secure session management
 - Enhanced email content sanitization
@@ -105,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2024-08-20
 
 ### Added
+
 - Initial release of Seu Mail
 - Basic SMTP email sending functionality
 - IMAP email receiving and synchronization
@@ -121,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic error handling and logging
 
 ### Security
+
 - SSL/TLS support for email connections
 - Basic input validation
 - Secure password storage
@@ -129,6 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0-beta] - 2024-07-10
 
 ### Added
+
 - Beta release for testing
 - Core email functionality
 - Basic Blazor Server interface
@@ -137,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project structure
 
 ### Known Issues
+
 - Limited error handling
 - No mobile optimization
 - Basic UI design
@@ -154,7 +167,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Contributing
 
-When contributing to this project, please update this changelog following the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format:
+When contributing to this project, please update this changelog following
+the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format:
 
 - Use `Added` for new features
 - Use `Changed` for changes in existing functionality

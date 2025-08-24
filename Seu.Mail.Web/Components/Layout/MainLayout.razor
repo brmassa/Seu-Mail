@@ -15,7 +15,7 @@
 
         <!-- Account Selector -->
         <div class="p-3 border-bottom border-secondary">
-            <AccountSelector />
+            <AccountSelector/>
         </div>
 
         <!-- Navigation -->
@@ -92,7 +92,8 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="search-box">
                         <div class="input-group" style="width: 300px;">
-                            <input type="text" class="form-control" placeholder="Search emails..." @bind="SearchQuery" @onkeypress="OnSearchKeyPress">
+                            <input type="text" class="form-control" placeholder="Search emails..." @bind="SearchQuery"
+                                   @onkeypress="OnSearchKeyPress">
                             <button class="btn btn-outline-secondary" type="button" @onclick="SearchEmails">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -165,7 +166,7 @@
         try
         {
             // Trigger refresh of current page
-            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+            Navigation.NavigateTo(Navigation.Uri, true);
             await UpdateUnreadCount();
             ShowToastMessage("Success", "Emails refreshed successfully.");
         }
@@ -292,11 +293,13 @@
             accounts = new List<EmailAccount>();
         }
     }
+
 }
 
 <script src="~/js/email-navigation.js"></script>
+<script src="~/js/email-list.js"></script>
 <script>
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             if (window.initializeResizablePanes) {
                 window.initializeResizablePanes();

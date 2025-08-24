@@ -33,32 +33,40 @@
             <!-- Action Buttons -->
             <div class="d-flex align-items-center gap-2">
                 <div class="btn-group" role="group">
-                    <button type="button" class="btn @(CurrentViewType == CalendarViewType.Month ? "btn-primary" : "btn-outline-primary")"
+                    <button type="button"
+                            class="btn @(CurrentViewType == CalendarViewType.Month ? "btn-primary" : "btn-outline-primary")"
                             @onclick="() => SetViewType(CalendarViewType.Month)">
                         Month
                     </button>
-                    <button type="button" class="btn @(CurrentViewType == CalendarViewType.Week ? "btn-primary" : "btn-outline-primary")"
+                    <button type="button"
+                            class="btn @(CurrentViewType == CalendarViewType.Week ? "btn-primary" : "btn-outline-primary")"
                             @onclick="() => SetViewType(CalendarViewType.Week)">
                         Week
                     </button>
-                    <button type="button" class="btn @(CurrentViewType == CalendarViewType.Day ? "btn-primary" : "btn-outline-primary")"
+                    <button type="button"
+                            class="btn @(CurrentViewType == CalendarViewType.Day ? "btn-primary" : "btn-outline-primary")"
                             @onclick="() => SetViewType(CalendarViewType.Day)">
                         Day
                     </button>
                 </div>
 
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle me-2" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle me-2" type="button"
+                            data-bs-toggle="dropdown">
                         <i class="fas fa-cog"></i>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="/calendar/settings">
-                            <i class="fas fa-cog me-2"></i>Calendar Settings
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><button class="dropdown-item" @onclick="ShowImportExport">
-                            <i class="fas fa-exchange-alt me-2"></i>Import/Export
-                        </button></li>
+                                <i class="fas fa-cog me-2"></i>Calendar Settings
+                            </a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick="ShowImportExport">
+                                <i class="fas fa-exchange-alt me-2"></i>Import/Export
+                            </button>
+                        </li>
                     </ul>
                 </div>
 
@@ -85,29 +93,29 @@
             {
                 case CalendarViewType.Month:
                     <MonthView Events="@Events"
-                              CurrentDate="@CurrentDate"
-                              Settings="@Settings"
-                              OnEventClick="@HandleEventClick"
-                              OnDateClick="@HandleDateClick"
-                              OnEventDrop="@HandleEventDrop" />
+                               CurrentDate="@CurrentDate"
+                               Settings="@Settings"
+                               OnEventClick="@HandleEventClick"
+                               OnDateClick="@HandleDateClick"
+                               OnEventDrop="@HandleEventDrop"/>
                     break;
 
                 case CalendarViewType.Week:
                     <WeekView Events="@Events"
-                             CurrentDate="@CurrentDate"
-                             Settings="@Settings"
-                             OnEventClick="@HandleEventClick"
-                             OnTimeSlotClick="@HandleTimeSlotClick"
-                             OnEventDrop="@HandleEventDrop" />
+                              CurrentDate="@CurrentDate"
+                              Settings="@Settings"
+                              OnEventClick="@HandleEventClick"
+                              OnTimeSlotClick="@HandleTimeSlotClick"
+                              OnEventDrop="@HandleEventDrop"/>
                     break;
 
                 case CalendarViewType.Day:
                     <DayView Events="@Events"
-                            CurrentDate="@CurrentDate"
-                            Settings="@Settings"
-                            OnEventClick="@HandleEventClick"
-                            OnTimeSlotClick="@HandleTimeSlotClick"
-                            OnEventDrop="@HandleEventDrop" />
+                             CurrentDate="@CurrentDate"
+                             Settings="@Settings"
+                             OnEventClick="@HandleEventClick"
+                             OnTimeSlotClick="@HandleTimeSlotClick"
+                             OnEventDrop="@HandleEventDrop"/>
                     break;
             }
         }
@@ -128,30 +136,30 @@
                     @if (EditingEvent != null)
                     {
                         <EditForm Model="EditingEvent" OnValidSubmit="SaveEvent">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="text-danger" />
+                            <DataAnnotationsValidator/>
+                            <ValidationSummary class="text-danger"/>
 
                             <div class="mb-3">
                                 <label class="form-label">Title *</label>
-                                <InputText @bind-Value="EditingEvent.Title" class="form-control" />
+                                <InputText @bind-Value="EditingEvent.Title" class="form-control"/>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
-                                <InputTextArea @bind-Value="EditingEvent.Description" class="form-control" rows="3" />
+                                <InputTextArea @bind-Value="EditingEvent.Description" class="form-control" rows="3"/>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">Start Date *</label>
-                                        <InputDate @bind-Value="StartDate" class="form-control" />
+                                        <InputDate @bind-Value="StartDate" class="form-control"/>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">Start Time *</label>
-                                        <InputText @bind-Value="StartTime" class="form-control" />
+                                        <InputText @bind-Value="StartTime" class="form-control"/>
                                     </div>
                                 </div>
                             </div>
@@ -160,25 +168,26 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">End Date *</label>
-                                        <InputDate @bind-Value="EndDate" class="form-control" />
+                                        <InputDate @bind-Value="EndDate" class="form-control"/>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">End Time *</label>
-                                        <InputText @bind-Value="EndTime" class="form-control" />
+                                        <InputText @bind-Value="EndTime" class="form-control"/>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Location</label>
-                                <InputText @bind-Value="EditingEvent.Location" class="form-control" />
+                                <InputText @bind-Value="EditingEvent.Location" class="form-control"/>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox @bind-Value="EditingEvent.IsAllDay" class="form-check-input" id="isAllDay" />
+                                    <InputCheckbox @bind-Value="EditingEvent.IsAllDay" class="form-check-input"
+                                                   id="isAllDay"/>
                                     <label class="form-check-label" for="isAllDay">
                                         All Day Event
                                     </label>
@@ -186,7 +195,8 @@
                             </div>
 
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-secondary" @onclick="CloseEventEditor">Cancel</button>
+                                <button type="button" class="btn btn-secondary" @onclick="CloseEventEditor">Cancel
+                                </button>
                                 <button type="submit" class="btn btn-primary">Save</button>
                             </div>
                         </EditForm>
@@ -208,7 +218,7 @@
                     <button type="button" class="btn-close" @onclick="CloseImportExport"></button>
                 </div>
                 <div class="modal-body">
-                    <ImportExportComponent OnDataChanged="OnImportExportDataChanged" />
+                    <ImportExportComponent OnDataChanged="OnImportExportDataChanged"/>
                 </div>
             </div>
         </div>
@@ -552,18 +562,19 @@
         await LoadEvents();
         StateHasChanged();
     }
+
 }
 
 <style>
-.calendar-container {
-    height: calc(100vh - 80px);
-}
+    .calendar-container {
+        height: calc(100vh - 80px);
+    }
 
-.calendar-header {
-    flex-shrink: 0;
-}
+    .calendar-header {
+        flex-shrink: 0;
+    }
 
-.calendar-content {
-    min-height: 0;
-}
+    .calendar-content {
+        min-height: 0;
+    }
 </style>

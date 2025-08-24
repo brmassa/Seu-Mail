@@ -84,7 +84,10 @@ public class EmailFolder
     /// <summary>
     /// Gets the display name or falls back to the folder name.
     /// </summary>
-    public string GetDisplayName() => string.IsNullOrWhiteSpace(DisplayName) ? Name : DisplayName;
+    public string GetDisplayName()
+    {
+        return string.IsNullOrWhiteSpace(DisplayName) ? Name : DisplayName;
+    }
 
     /// <summary>
     /// Gets the icon CSS class for the folder type.

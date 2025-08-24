@@ -4,11 +4,13 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-Server-blue.svg)](https://blazor.net/)
 
-A modern, feature-rich email client built with C# and Blazor Server. Part of the **Seu** (Yours) project - empowering users with privacy-focused, self-hosted communication tools.
+A modern, feature-rich email client built with C# and Blazor Server. Part of the **Seu** (Yours) project - empowering
+users with privacy-focused, self-hosted communication tools.
 
 ## ✨ Features
 
 ### 📬 Email Management
+
 - **Multi-Protocol Support**: SMTP, IMAP, and POP3 connectivity
 - **Multiple Account Management**: Add and manage unlimited email accounts
 - **Unified Inbox**: View emails from all accounts in one place
@@ -17,6 +19,7 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 - **Email Threading**: Conversation view for related messages
 
 ### 🎨 Modern Interface
+
 - **Gmail-inspired UI**: Clean, intuitive interface familiar to users
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
 - **Multiple Layout Modes**: Split-screen, separate page, or bottom pane views
@@ -24,6 +27,7 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 - **Dark/Light Themes**: Choose your preferred appearance
 
 ### 📝 Composition & Editing
+
 - **Rich Text Editor**: HTML email composition with formatting options
 - **File Attachments**: Support for multiple file attachments (up to 25MB)
 - **Draft Management**: Auto-save drafts and resume editing
@@ -31,6 +35,7 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 - **Signature Support**: Custom signatures for each account
 
 ### 📅 Calendar Integration
+
 - **Event Management**: Create, edit, and manage calendar events
 - **Multiple Calendars**: Support for multiple calendar accounts
 - **Event Reminders**: Customizable notification system
@@ -38,6 +43,7 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 - **Recurring Events**: Support for repeating events with flexible rules
 
 ### 🔒 Security & Privacy
+
 - **End-to-End Security**: SSL/TLS encryption for all connections
 - **Local Data Storage**: All data stored locally using SQLite
 - **Password Encryption**: Secure storage of account credentials
@@ -45,6 +51,7 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 - **Self-Hosted**: Complete control over your data
 
 ### 🎛️ Advanced Features
+
 - **Email Provider Detection**: Automatic configuration for popular providers
 - **DNS Autodiscovery**: Automatic server settings detection
 - **Folder Synchronization**: Two-way sync with email servers
@@ -66,20 +73,14 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
    cd Seu-Mail
    ```
 
-2. **Restore dependencies**
+2. **Run the web application**
    ```bash
-   dotnet restore
+   dotnet run --project Seu.Mail.Web
    ```
 
-3. **Run the web application**
-   ```bash
-   cd Seu.Mail.Web
-   dotnet run
-   ```
-
-4. **Open in browser**
-   - Navigate to `https://localhost:7000` or the URL shown in the console
-   - The application will create the database automatically on first run
+3. **Open in browser**
+    - Navigate to `https://localhost:5000` or the URL shown in the console
+    - The application will create the database automatically on first run
 
 ## 📱 Usage
 
@@ -87,28 +88,19 @@ A modern, feature-rich email client built with C# and Blazor Server. Part of the
 
 1. Launch Seu Mail and click **"Add Account"**
 2. Enter your email credentials:
-   - **Display Name**: How you want to appear to recipients
-   - **Email Address**: Your email address
-   - **Password**: Your email password (use app passwords for 2FA-enabled accounts)
+    - **Display Name**: How you want to appear to recipients
+    - **Email Address**: Your email address
+    - **Password**: Your email password (use app passwords for 2FA-enabled accounts)
 3. Use **Quick Setup** for popular providers or configure manually
 4. Test the connection and save
 
 ### Supported Email Providers
 
-| Provider | IMAP Server | SMTP Server | Port | Security |
-|----------|-------------|-------------|------|----------|
-| Gmail | imap.gmail.com | smtp.gmail.com | 993/587 | SSL/TLS |
-| Outlook | outlook.office365.com | smtp-mail.outlook.com | 993/587 | SSL/TLS |
-| Yahoo | imap.mail.yahoo.com | smtp.mail.yahoo.com | 993/587 | SSL/TLS |
-
-### Gmail Setup (2FA Enabled)
-
-1. Enable 2-Factor Authentication in your Google Account
-2. Generate an App Password:
-   - Go to **Google Account Settings** → **Security**
-   - Select **2-Step Verification** → **App passwords**
-   - Choose **Mail** as the app type
-3. Use the generated 16-character password in Seu Mail
+| Provider | IMAP Server           | SMTP Server           | Port    | Security |
+|----------|-----------------------|-----------------------|---------|----------|
+| Gmail    | imap.gmail.com        | smtp.gmail.com        | 993/587 | SSL/TLS  |
+| Outlook  | outlook.office365.com | smtp-mail.outlook.com | 993/587 | SSL/TLS  |
+| Yahoo    | imap.mail.yahoo.com   | smtp.mail.yahoo.com   | 993/587 | SSL/TLS  |
 
 ## ⚙️ Configuration
 
@@ -142,56 +134,12 @@ Customize behavior in `appsettings.json`:
 ### User Preferences
 
 Customize your experience through the Settings page:
+
 - **Layout Mode**: Choose between split-screen or separate page views
 - **Email Display**: Configure sender display, previews, and compact mode
 - **Sync Settings**: Automatic sync intervals and email limits
 - **Notifications**: Email and calendar notification preferences
 
-## 🏗️ Architecture
-
-### Project Structure
-
-```
-Seu.Mail/
-├── src/                          # Source code projects
-│   ├── Seu.Mail.Core/           # Domain models and entities
-│   │   ├── Models/              # Core domain models
-│   │   │   ├── EmailMessage.cs
-│   │   │   ├── EmailAccount.cs
-│   │   │   └── EmailAttachment.cs
-│   │   └── Enums/               # Domain enumerations
-│   │       └── EmailEnums.cs
-│   ├── Seu.Mail.Contracts/      # Service interfaces and DTOs
-│   │   └── Services/            # Service contracts
-│   │       ├── IEmailService.cs
-│   │       ├── IAccountService.cs
-│   │       └── ICalendarService.cs
-│   ├── Seu.Mail.Data/           # Data access layer
-│   │   ├── Context/             # Entity Framework context
-│   │   ├── Repositories/        # Repository implementations
-│   │   └── Migrations/          # Database migrations
-│   ├── Seu.Mail.Services/       # Business logic implementation
-│   │   ├── EmailService.cs      # Email operations (IMAP/SMTP)
-│   │   ├── AccountService.cs    # Account management
-│   │   └── ValidationService.cs # Input validation
-│   ├── Seu.Mail.Calendar/       # Calendar module (pluggable)
-│   │   ├── Models/              # Calendar-specific models
-│   │   ├── Services/            # Calendar business logic
-│   │   └── Contracts/           # Calendar interfaces
-│   ├── Seu.Mail.Shared/         # Common utilities and helpers
-│   │   ├── Extensions/          # Extension methods
-│   │   ├── Utilities/           # Helper classes
-│   │   └── Constants/           # Application constants
-│   └── Seu.Mail.Web/            # Blazor Server web application
-│       ├── Components/          # Blazor components
-│       ├── Pages/               # Web pages
-│       ├── wwwroot/             # Static web assets
-│       └── Program.cs           # Web app entry point
-├── tests/                       # Test projects
-│   ├── Seu.Mail.Tests.Unit/     # Unit tests
-│   └── Seu.Mail.Tests.Integration/ # Integration tests
-└── Seu.Mail.sln                # Solution file
-```
 
 ### Key Technologies
 
@@ -224,7 +172,7 @@ When modifying data models in `Seu.Mail.Data`:
 
 ```bash
 # Navigate to the data project
-cd src/Seu.Mail.Data
+cd Seu.Mail.Data
 
 # Add migration
 dotnet ef migrations add YourMigrationName
@@ -233,7 +181,7 @@ dotnet ef migrations add YourMigrationName
 dotnet ef database update
 
 # Or from solution root
-dotnet ef migrations add YourMigrationName --project src/Seu.Mail.Data --startup-project src/Seu.Mail.Web
+dotnet ef migrations add YourMigrationName --project Seu.Mail.Data --startup-project Seu.Mail.Web
 ```
 
 ### Building for Production
@@ -243,10 +191,10 @@ dotnet ef migrations add YourMigrationName --project src/Seu.Mail.Data --startup
 dotnet build -c Release
 
 # Publish web application
-dotnet publish src/Seu.Mail.Web -c Release -o ./publish
+dotnet publish Seu.Mail.Web -c Release -o ./publish
 
 # Build specific project
-dotnet build src/Seu.Mail.Services -c Release
+dotnet build Seu.Mail.Services -c Release
 ```
 
 ### Development Guidelines
@@ -262,21 +210,25 @@ dotnet build src/Seu.Mail.Services -c Release
 ### Common Issues
 
 **Connection Failed**
+
 - Verify server settings and credentials
 - Check firewall and network connectivity
 - Ensure SSL/TLS is properly configured
 
 **Gmail Authentication Issues**
+
 - Enable 2-Factor Authentication
 - Use App Password instead of account password
 - Check Google Account security settings
 
 **Database Errors**
+
 - Ensure write permissions in application directory
 - Delete `Seu.Mail.db` to reset (will lose data)
 - Check disk space availability
 
 **Performance Issues**
+
 - Reduce sync frequency in settings
 - Limit emails per sync operation
 - Clear browser cache and restart application

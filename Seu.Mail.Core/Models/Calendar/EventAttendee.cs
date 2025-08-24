@@ -80,7 +80,10 @@ public class EventAttendee
     /// <summary>
     /// Gets the display name or email if display name is not available
     /// </summary>
-    public string GetDisplayText() => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName : Email;
+    public string GetDisplayText()
+    {
+        return !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName : Email;
+    }
 
     /// <summary>
     /// Gets a formatted string combining display name and email

@@ -105,7 +105,8 @@ public interface ICalendarSubscriptionService
     /// <param name="endDate">End date for export range.</param>
     /// <param name="includePrivate">Whether to include private events.</param>
     /// <returns>iCalendar formatted string.</returns>
-    Task<string> ExportToICalendarAsync(int accountId, DateTime startDate, DateTime endDate, bool includePrivate = true);
+    Task<string> ExportToICalendarAsync(int accountId, DateTime startDate, DateTime endDate,
+        bool includePrivate = true);
 
     /// <summary>
     /// Imports events from a CSV file.

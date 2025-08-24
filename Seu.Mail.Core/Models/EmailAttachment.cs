@@ -145,8 +145,8 @@ public class EmailAttachment
             if (Size == 0) return "0 B";
 
             string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
-            int place = Convert.ToInt32(Math.Floor(Math.Log(Size, 1024)));
-            double num = Math.Round(Size / Math.Pow(1024, place), 1);
+            var place = Convert.ToInt32(Math.Floor(Math.Log(Size, 1024)));
+            var num = Math.Round(Size / Math.Pow(1024, place), 1);
             return $"{num} {suf[place]}";
         }
     }
@@ -160,7 +160,7 @@ public class EmailAttachment
     /// Determines if the attachment is a document based on content type.
     /// </summary>
     public bool IsDocument => ContentType.StartsWith("application/", StringComparison.OrdinalIgnoreCase) ||
-                             ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase);
+                              ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Determines if the attachment is a video based on content type.

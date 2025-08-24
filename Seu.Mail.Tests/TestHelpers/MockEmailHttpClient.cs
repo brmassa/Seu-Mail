@@ -32,13 +32,9 @@ public class MockEmailHttpClient : IEmailHttpClient
     public void SetupGetResponse(string url, string? response)
     {
         if (response == null)
-        {
             _getResponses.Remove(url);
-        }
         else
-        {
             _getResponses[url] = response;
-        }
     }
 
     /// <summary>
@@ -49,13 +45,9 @@ public class MockEmailHttpClient : IEmailHttpClient
     public void SetupPostResponse(string url, string? response)
     {
         if (response == null)
-        {
             _postResponses.Remove(url);
-        }
         else
-        {
             _postResponses[url] = response;
-        }
     }
 
     /// <summary>
@@ -74,10 +66,7 @@ public class MockEmailHttpClient : IEmailHttpClient
     {
         _requestHistory.Add(new HttpRequest("GET", url, null, null));
 
-        if (_getResponses.TryGetValue(url, out var response))
-        {
-            return Task.FromResult<string?>(response);
-        }
+        if (_getResponses.TryGetValue(url, out var response)) return Task.FromResult<string?>(response);
 
         return Task.FromResult<string?>(null);
     }
@@ -87,10 +76,7 @@ public class MockEmailHttpClient : IEmailHttpClient
     {
         _requestHistory.Add(new HttpRequest("POST", url, content, contentType));
 
-        if (_postResponses.TryGetValue(url, out var response))
-        {
-            return Task.FromResult<string?>(response);
-        }
+        if (_postResponses.TryGetValue(url, out var response)) return Task.FromResult<string?>(response);
 
         return Task.FromResult<string?>(null);
     }

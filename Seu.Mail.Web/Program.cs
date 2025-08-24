@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Seu.Mail.Data.Context;
 using Seu.Mail.Services.Extensions;
-
 using Seu.Mail.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);

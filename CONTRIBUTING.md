@@ -1,6 +1,7 @@
 # Contributing to Seu Mail 🤝
 
-Thank you for your interest in contributing to Seu Mail! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Seu Mail! This document provides guidelines and information for
+contributors.
 
 ## 📋 Table of Contents
 
@@ -17,7 +18,8 @@ Thank you for your interest in contributing to Seu Mail! This document provides 
 
 ## 📜 Code of Conduct
 
-By participating in this project, you agree to maintain a respectful and inclusive environment. We welcome contributors from all backgrounds and experience levels.
+By participating in this project, you agree to maintain a respectful and inclusive environment. We welcome contributors
+from all backgrounds and experience levels.
 
 ### Our Standards
 
@@ -117,7 +119,8 @@ hotfix/critical-security-patch
 
 ### C# Coding Conventions
 
-Follow Microsoft's [C# Coding Conventions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/inside-a-program/coding-conventions):
+Follow
+Microsoft's [C# Coding Conventions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/inside-a-program/coding-conventions):
 
 ```csharp
 // ✅ Good
@@ -268,10 +271,10 @@ dotnet test --filter "GetEmailsAsync_WithValidAccount_ReturnsEmailList"
 
 1. **Create a descriptive title** that summarizes the change
 2. **Provide detailed description** explaining:
-   - What problem does this solve?
-   - How does it solve it?
-   - Any breaking changes?
-   - Screenshots (if UI changes)
+    - What problem does this solve?
+    - How does it solve it?
+    - Any breaking changes?
+    - Screenshots (if UI changes)
 3. **Link related issues** using keywords (fixes #123, closes #456)
 4. **Request appropriate reviewers**
 5. **Ensure CI checks pass**
@@ -452,7 +455,8 @@ All contributors are recognized in our README and release notes. We appreciate e
 
 ## Thank You! 🎉
 
-Thank you for contributing to Seu Mail! Your efforts help make email communication more private, secure, and user-friendly for everyone.
+Thank you for contributing to Seu Mail! Your efforts help make email communication more private, secure, and
+user-friendly for everyone.
 
 **Questions?** Don't hesitate to ask! We're here to help new contributors get started.
 

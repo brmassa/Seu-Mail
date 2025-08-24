@@ -1,48 +1,48 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Seu.Mail.Data</RootNamespace>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors>$(WarningsNotAsErrors);1591</WarningsAsErrors>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Seu.Mail.Data</RootNamespace>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsAsErrors>$(WarningsNotAsErrors);1591</WarningsAsErrors>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageId>Seu.Mail.Data</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Bruno Massa</Authors>
-    <Company>Seu Project</Company>
-    <Product>Seu Mail</Product>
-    <Description>Data access layer and Entity Framework implementation for Seu Mail - a privacy-focused email client</Description>
-    <Copyright>Copyright © 2024 Bruno Massa</Copyright>
-    <PackageProjectUrl>https://github.com/brmassa/Seu-Mail</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/brmassa/Seu-Mail</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>email;privacy;entityframework;sqlite;data</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
+    <PropertyGroup>
+        <PackageId>Seu.Mail.Data</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>Bruno Massa</Authors>
+        <Company>Seu Project</Company>
+        <Product>Seu Mail</Product>
+        <Description>Data access layer and Entity Framework implementation for Seu Mail - a privacy-focused email client</Description>
+        <Copyright>Copyright © 2024 Bruno Massa</Copyright>
+        <PackageProjectUrl>https://github.com/brmassa/Seu-Mail</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/brmassa/Seu-Mail</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>email;privacy;entityframework;sqlite;data</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.8">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.8" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.8">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.8"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj" />
-    <ProjectReference Include="..\Seu.Mail.Contracts\Seu.Mail.Contracts.csproj" />
-    <ProjectReference Include="..\Seu.Mail.Calendar\Seu.Mail.Calendar.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Contracts\Seu.Mail.Contracts.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Calendar\Seu.Mail.Calendar.csproj"/>
+    </ItemGroup>
 
 </Project>

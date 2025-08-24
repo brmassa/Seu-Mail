@@ -67,12 +67,14 @@
                                     </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="emailDisplay" id="titleSenderPreview"
+                                    <input class="form-check-input" type="radio" name="emailDisplay"
+                                           id="titleSenderPreview"
                                            checked="@(settings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)"
                                            @onchange="@(() => UpdateEmailDisplayMode(EmailDisplayMode.TitleSenderPreview))">
                                     <label class="form-check-label" for="titleSenderPreview">
                                         <strong>Title + Sender + Preview</strong>
-                                        <br><small class="text-muted">Show subject, sender, and body preview (current default)</small>
+                                        <br><small class="text-muted">Show subject, sender, and body preview (current
+                                            default)</small>
                                     </label>
                                 </div>
                             </div>
@@ -83,7 +85,8 @@
                                        @onchange="@((e) => UpdateCompactMode((bool)e.Value!))">
                                 <label class="form-check-label" for="compactMode">
                                     <strong>Compact mode</strong>
-                                    <br><small class="text-muted">Reduce spacing between emails for more dense display</small>
+                                    <br><small class="text-muted">Reduce spacing between emails for more dense
+                                        display</small>
                                 </label>
                             </div>
                         </div>
@@ -106,7 +109,8 @@
                                            @onchange="@(() => UpdateEmailLayoutMode(EmailLayoutMode.SeparatePage))">
                                     <label class="form-check-label" for="separatePage">
                                         <strong>Separate page</strong>
-                                        <br><small class="text-muted">Open emails in full page view (current default)</small>
+                                        <br><small class="text-muted">Open emails in full page view (current
+                                            default)</small>
                                     </label>
                                 </div>
                                 <div class="form-check">
@@ -115,7 +119,8 @@
                                            @onchange="@(() => UpdateEmailLayoutMode(EmailLayoutMode.SplitRight))">
                                     <label class="form-check-label" for="splitRight">
                                         <strong>Split view - Email on right</strong>
-                                        <br><small class="text-muted">Show email list on left, selected email on right</small>
+                                        <br><small class="text-muted">Show email list on left, selected email on
+                                            right</small>
                                     </label>
                                 </div>
                                 <div class="form-check">
@@ -124,7 +129,8 @@
                                            @onchange="@(() => UpdateEmailLayoutMode(EmailLayoutMode.SplitBottom))">
                                     <label class="form-check-label" for="splitBottom">
                                         <strong>Split view - Email below</strong>
-                                        <br><small class="text-muted">Show email list on top, selected email below</small>
+                                        <br><small class="text-muted">Show email list on top, selected email
+                                            below</small>
                                     </label>
                                 </div>
                             </div>
@@ -145,7 +151,9 @@
                                 <textarea class="form-control" id="defaultSignature" rows="4"
                                           placeholder="Enter your default email signature..."
                                           @bind="settings.DefaultSignature"></textarea>
-                                <div class="form-text">This signature will be automatically added to new emails you compose.</div>
+                                <div class="form-text">This signature will be automatically added to new emails you
+                                    compose.
+                                </div>
                             </div>
 
                             @if (!string.IsNullOrEmpty(settings.DefaultSignature))
@@ -388,4 +396,5 @@
     {
         showToast = false;
     }
+
 }

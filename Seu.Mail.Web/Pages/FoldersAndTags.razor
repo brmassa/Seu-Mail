@@ -79,7 +79,8 @@
                                                         @folder.MessageCount messages
                                                         @if (folder.UnreadCount > 0)
                                                         {
-                                                            <span class="badge bg-danger ms-1">@folder.UnreadCount unread</span>
+                                                            <span
+                                                                class="badge bg-danger ms-1">@folder.UnreadCount unread</span>
                                                         }
                                                     </small>
                                                 </div>
@@ -91,14 +92,17 @@
                                                 }
                                                 else
                                                 {
-                                                    <button class="btn btn-outline-primary" @onclick="() => EditFolder(folder)">
+                                                    <button class="btn btn-outline-primary"
+                                                            @onclick="() => EditFolder(folder)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-outline-danger" @onclick="() => DeleteFolder(folder)">
+                                                    <button class="btn btn-outline-danger"
+                                                            @onclick="() => DeleteFolder(folder)">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 }
-                                                <button class="btn btn-outline-info" @onclick="() => SyncFolder(folder)">
+                                                <button class="btn btn-outline-info"
+                                                        @onclick="() => SyncFolder(folder)">
                                                     <i class="fas fa-sync-alt"></i>
                                                 </button>
                                             </div>
@@ -139,7 +143,8 @@
                                     {
                                         <div class="list-group-item d-flex justify-content-between align-items-center">
                                             <div class="d-flex align-items-center">
-                                                <div class="tag-color-indicator me-3" style="background-color: @tag.Color; width: 16px; height: 16px; border-radius: 50%;"></div>
+                                                <div class="tag-color-indicator me-3"
+                                                     style="background-color: @tag.Color; width: 16px; height: 16px; border-radius: 50%;"></div>
                                                 <div>
                                                     <h6 class="mb-0">@tag.Name</h6>
                                                     @if (!string.IsNullOrEmpty(tag.Description))
@@ -191,7 +196,7 @@
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@folderModel" OnValidSubmit="@SaveFolder">
-                        <DataAnnotationsValidator />
+                        <DataAnnotationsValidator/>
 
                         <div class="mb-3">
                             <label class="form-label">Account</label>
@@ -206,14 +211,16 @@
 
                         <div class="mb-3">
                             <label class="form-label">Folder Name <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="folderModel.Name" placeholder="Enter folder name" required />
-                            <ValidationMessage For="@(() => folderModel.Name)" />
+                            <InputText class="form-control" @bind-Value="folderModel.Name"
+                                       placeholder="Enter folder name" required/>
+                            <ValidationMessage For="@(() => folderModel.Name)"/>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Display Name</label>
-                            <InputText class="form-control" @bind-Value="folderModel.DisplayName" placeholder="Optional display name" />
-                            <ValidationMessage For="@(() => folderModel.DisplayName)" />
+                            <InputText class="form-control" @bind-Value="folderModel.DisplayName"
+                                       placeholder="Optional display name"/>
+                            <ValidationMessage For="@(() => folderModel.DisplayName)"/>
                         </div>
 
                         <div class="d-flex justify-content-end">
@@ -265,7 +272,7 @@
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@tagModel" OnValidSubmit="@SaveTag">
-                        <DataAnnotationsValidator />
+                        <DataAnnotationsValidator/>
 
                         <div class="mb-3">
                             <label class="form-label">Account</label>
@@ -280,23 +287,26 @@
 
                         <div class="mb-3">
                             <label class="form-label">Tag Name <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="tagModel.Name" placeholder="Enter tag name" required />
-                            <ValidationMessage For="@(() => tagModel.Name)" />
+                            <InputText class="form-control" @bind-Value="tagModel.Name" placeholder="Enter tag name"
+                                       required/>
+                            <ValidationMessage For="@(() => tagModel.Name)"/>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Color</label>
                             <div class="d-flex align-items-center">
-                                <input type="color" class="form-control form-control-color me-2" @bind="tagModel.Color" style="width: 60px;" />
-                                <InputText class="form-control" @bind-Value="tagModel.Color" placeholder="#007bff" />
+                                <input type="color" class="form-control form-control-color me-2" @bind="tagModel.Color"
+                                       style="width: 60px;"/>
+                                <InputText class="form-control" @bind-Value="tagModel.Color" placeholder="#007bff"/>
                             </div>
-                            <ValidationMessage For="@(() => tagModel.Color)" />
+                            <ValidationMessage For="@(() => tagModel.Color)"/>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <InputTextArea class="form-control" @bind-Value="tagModel.Description" placeholder="Optional description" rows="3" />
-                            <ValidationMessage For="@(() => tagModel.Description)" />
+                            <InputTextArea class="form-control" @bind-Value="tagModel.Description"
+                                           placeholder="Optional description" rows="3"/>
+                            <ValidationMessage For="@(() => tagModel.Description)"/>
                         </div>
 
                         <div class="d-flex justify-content-end">
@@ -452,6 +462,7 @@
         {
             folderModel.AccountId = accounts.First().Id;
         }
+
         showFolderModal = true;
     }
 
@@ -463,6 +474,7 @@
         {
             tagModel.AccountId = accounts.First().Id;
         }
+
         showTagModal = true;
     }
 
@@ -629,7 +641,7 @@
     {
         try
         {
-            bool success = false;
+            var success = false;
 
             if (deleteType == "folder")
             {
@@ -724,4 +736,5 @@
             InvokeAsync(StateHasChanged);
         });
     }
+
 }

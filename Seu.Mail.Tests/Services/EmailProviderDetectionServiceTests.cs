@@ -217,7 +217,8 @@ public class EmailProviderDetectionServiceTests
     [Test]
     [Arguments("Gmail", "Gmail")]
     [Arguments("Outlook", "Outlook/Hotmail")]
-    public async Task GetProviderByNameAsync_WithValidName_ShouldReturnProvider(string providerName, string expectedDisplayName)
+    public async Task GetProviderByNameAsync_WithValidName_ShouldReturnProvider(string providerName,
+        string expectedDisplayName)
     {
         // Act
         var result = await _service.GetProviderByNameAsync(providerName);
@@ -324,7 +325,8 @@ public class EmailProviderDetectionServiceTests
     }
 
     [Test]
-    public async Task ProbeAndDetectProviderAsync_WhenDnsThrowsButAutodiscoverySucceeds_ShouldReturnAutodiscoveryResult()
+    public async Task
+        ProbeAndDetectProviderAsync_WhenDnsThrowsButAutodiscoverySucceeds_ShouldReturnAutodiscoveryResult()
     {
         // Arrange
         _mockDnsService.DiscoverEmailServersAsync("partial-fail.com")

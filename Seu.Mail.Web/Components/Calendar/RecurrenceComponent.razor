@@ -11,7 +11,8 @@
         <div class="card-body">
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" checked="@IsRecurring" @onchange="OnRecurringChanged" id="isRecurring">
+                    <input class="form-check-input" type="checkbox" checked="@IsRecurring"
+                           @onchange="OnRecurringChanged" id="isRecurring">
                     <label class="form-check-label" for="isRecurring">
                         This is a recurring event
                     </label>
@@ -47,7 +48,7 @@
                         <div class="mb-3">
                             <label class="form-label">Repeat on</label>
                             <div class="d-flex gap-2 flex-wrap">
-                                @foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+                                @foreach (var day in Enum.GetValues<DayOfWeek>())
                                 {
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox"
@@ -69,13 +70,16 @@
                         <div class="mb-3">
                             <label class="form-label">Monthly recurrence type</label>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="monthlyType" checked="@MonthlyByDate" id="monthlyByDate" @onchange="@(() => OnMonthlyTypeChanged(true))">
+                                <input class="form-check-input" type="radio" name="monthlyType" checked="@MonthlyByDate"
+                                       id="monthlyByDate" @onchange="@(() => OnMonthlyTypeChanged(true))">
                                 <label class="form-check-label" for="monthlyByDate">
                                     On day @EventStartDate.Day of the month
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="monthlyType" checked="@(!MonthlyByDate)" id="monthlyByDay" @onchange="@(() => OnMonthlyTypeChanged(false))">
+                                <input class="form-check-input" type="radio" name="monthlyType"
+                                       checked="@(!MonthlyByDate)" id="monthlyByDay"
+                                       @onchange="@(() => OnMonthlyTypeChanged(false))">
                                 <label class="form-check-label" for="monthlyByDay">
                                     On the @GetWeekOfMonth() @EventStartDate.DayOfWeek of the month
                                 </label>
@@ -87,13 +91,15 @@
                     <div class="mb-3">
                         <label class="form-label">End</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "never")" id="endNever" @onchange="@(() => OnEndTypeChanged("never"))">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "never")"
+                                   id="endNever" @onchange="@(() => OnEndTypeChanged("never"))">
                             <label class="form-check-label" for="endNever">
                                 Never
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "after")" id="endAfter" @onchange="@(() => OnEndTypeChanged("after"))">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "after")"
+                                   id="endAfter" @onchange="@(() => OnEndTypeChanged("after"))">
                             <label class="form-check-label" for="endAfter">
                                 After
                             </label>
@@ -108,7 +114,8 @@
                             </div>
                         }
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "on")" id="endOn" @onchange="@(() => OnEndTypeChanged("on"))">
+                            <input class="form-check-input" type="radio" name="endType" checked="@(EndType == "on")"
+                                   id="endOn" @onchange="@(() => OnEndTypeChanged("on"))">
                             <label class="form-check-label" for="endOn">
                                 On
                             </label>
@@ -131,7 +138,8 @@
                                 {
                                     <div class="d-flex align-items-center mb-2">
                                         <span class="me-2">@exceptionDate.ToString("MMM d, yyyy")</span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveExceptionDate(exceptionDate)">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveExceptionDate(exceptionDate)">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </div>
@@ -463,6 +471,7 @@
             ExceptionDates = ExceptionDates.OrderBy(d => d).ToList();
             await UpdateRecurrenceRule();
         }
+
         CloseExceptionModal();
     }
 
@@ -476,55 +485,56 @@
     {
         ShowExceptionModal = false;
     }
+
 }
 
 <style>
-.recurrence-component .card {
-    border: 1px solid #dee2e6;
-}
+    .recurrence-component .card {
+        border: 1px solid #dee2e6;
+    }
 
-.recurring-options {
-    border-left: 3px solid #007bff;
-    padding-left: 1rem;
-    margin-left: 0.5rem;
-}
-
-.form-check {
-    margin-bottom: 0.5rem;
-}
-
-.form-check-input:focus {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.exception-dates {
-    max-height: 150px;
-    overflow-y: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 0.5rem;
-    background-color: #f8f9fa;
-}
-
-.alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
-}
-
-.input-group {
-    max-width: 300px;
-}
-
-@@media (max-width: 576px) {
-    .d-flex.gap-2.flex-wrap {
-        gap: 0.5rem !important;
+    .recurring-options {
+        border-left: 3px solid #007bff;
+        padding-left: 1rem;
+        margin-left: 0.5rem;
     }
 
     .form-check {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
     }
-}
+
+    .form-check-input:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .exception-dates {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+
+    .input-group {
+        max-width: 300px;
+    }
+
+    @@media (max-width: 576px) {
+        .d-flex.gap-2.flex-wrap {
+            gap: 0.5rem !important;
+        }
+
+        .form-check {
+            margin-bottom: 0.25rem;
+        }
+    }
 </style>

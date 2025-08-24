@@ -297,7 +297,7 @@ public class EncryptionServiceTests
         // Act & Assert - Multiple verifications should take similar time
         var times = new List<long>();
 
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             _encryptionService.VerifyPassword(wrongPassword, hashedPassword);
@@ -437,19 +437,17 @@ public class EncryptionServiceTests
 
         // Act
         foreach (var input in inputs)
-        {
             tasks.Add(Task.Run(() =>
             {
                 var encrypted = _encryptionService.EncryptString(input);
                 var decrypted = _encryptionService.DecryptString(encrypted);
                 return (encrypted, decrypted);
             }));
-        }
 
         var results = await Task.WhenAll(tasks);
 
         // Assert
-        for (int i = 0; i < inputs.Length; i++)
+        for (var i = 0; i < inputs.Length; i++)
         {
             await Assert.That(results[i].decrypted).IsEqualTo(inputs[i]);
             await Assert.That(results[i].encrypted).IsNotEqualTo(inputs[i]);

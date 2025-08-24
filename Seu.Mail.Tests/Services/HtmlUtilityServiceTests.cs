@@ -425,7 +425,8 @@ public class HtmlUtilityServiceTests
     public async Task SanitizeHtml_WithEncodedMaliciousContent_ShouldPreventBypass()
     {
         // Arrange
-        var input = "<div onclick=\"&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#120;&#115;&#115;&#39;&#41;\">Content</div>";
+        var input =
+            "<div onclick=\"&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#120;&#115;&#115;&#39;&#41;\">Content</div>";
 
         // Act
         var result = _htmlUtilityService.SanitizeHtml(input);
@@ -460,7 +461,9 @@ public class HtmlUtilityServiceTests
     public async Task StripHtml_WithLargeDocument_ShouldPerformEfficiently()
     {
         // Arrange
-        var largeHtml = "<html><body>" + string.Concat(Enumerable.Repeat("<p>Content paragraph with some text.</p>", 1000)) + "</body></html>";
+        var largeHtml = "<html><body>" +
+                        string.Concat(Enumerable.Repeat("<p>Content paragraph with some text.</p>", 1000)) +
+                        "</body></html>";
 
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -674,7 +677,7 @@ public class HtmlUtilityServiceTests
             ("XML: <?xml version='1.0'?>", true), // XML is HTML-like
             ("HTML: <br/>", true), // Self-closing tag
             ("Angle brackets: < >", false), // Just brackets
-            ("Tag-like: <notarealtag>", true), // Unknown tag is still HTML-like
+            ("Tag-like: <notarealtag>", true) // Unknown tag is still HTML-like
         };
 
         foreach (var (input, expected) in testCases)
@@ -717,10 +720,9 @@ public class HtmlUtilityServiceTests
     {
         // Arrange - Create a large HTML document
         var largeHtml = "<html><body>";
-        for (int i = 0; i < 1000; i++)
-        {
-            largeHtml += $"<div><h2>Section {i}</h2><p>Content for section {i} with some detailed text that includes more comprehensive information about this particular section. This ensures we have enough text to exceed the 10,000 character threshold for testing purposes.</p></div>";
-        }
+        for (var i = 0; i < 1000; i++)
+            largeHtml +=
+                $"<div><h2>Section {i}</h2><p>Content for section {i} with some detailed text that includes more comprehensive information about this particular section. This ensures we have enough text to exceed the 10,000 character threshold for testing purposes.</p></div>";
         largeHtml += "</body></html>";
 
         // Act
@@ -747,7 +749,7 @@ public class HtmlUtilityServiceTests
         Console.WriteLine($"Expected: '{expectedOutput.Replace("\n", "\\n")}'");
 
         // Create HtmlUtilityService to debug internal state
-        var logger = NSubstitute.Substitute.For<ILogger<HtmlUtilityService>>();
+        var logger = Substitute.For<ILogger<HtmlUtilityService>>();
         var service = new HtmlUtilityService(logger);
 
         // Let's manually trace what should happen

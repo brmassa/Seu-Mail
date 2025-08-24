@@ -16,7 +16,7 @@ public class UserSettingsServiceTests : IAsyncDisposable
     public UserSettingsServiceTests()
     {
         var options = new DbContextOptionsBuilder<EmailDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _context = new EmailDbContext(options);
@@ -246,7 +246,8 @@ public class UserSettingsServiceTests : IAsyncDisposable
     [Test]
     [Arguments("")]
     [Arguments(null)]
-    public async Task UpdateDefaultSignatureAsync_WithEmptyOrNullSignature_ShouldReturnTrueAndClearSignature(string? signature)
+    public async Task UpdateDefaultSignatureAsync_WithEmptyOrNullSignature_ShouldReturnTrueAndClearSignature(
+        string? signature)
     {
         // Arrange
         var settings = new UserSettings
@@ -399,10 +400,7 @@ public class UserSettingsServiceTests : IAsyncDisposable
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        for (int i = 0; i < 20; i++)
-        {
-            await _userSettingsService.GetUserSettingsAsync();
-        }
+        for (var i = 0; i < 20; i++) await _userSettingsService.GetUserSettingsAsync();
 
         stopwatch.Stop();
 
@@ -424,7 +422,7 @@ public class UserSettingsServiceTests : IAsyncDisposable
 
         // Act - Multiple rapid updates
         var tasks = new List<Task<bool>>();
-        for (int i = 1; i <= 5; i++)
+        for (var i = 1; i <= 5; i++)
         {
             var updateSettings = new UserSettings
             {
@@ -437,10 +435,7 @@ public class UserSettingsServiceTests : IAsyncDisposable
         var results = await Task.WhenAll(tasks);
 
         // Assert
-        foreach (var result in results)
-        {
-            await Assert.That(result).IsTrue();
-        }
+        foreach (var result in results) await Assert.That(result).IsTrue();
 
         var finalSettings = await _context.UserSettings.FindAsync(1);
         await Assert.That(finalSettings).IsNotNull();

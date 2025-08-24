@@ -22,20 +22,20 @@ partial class Build
         .Produces(CoverageResultFile)
         .Executes(() =>
             DotNetTasks.DotNetTest(settings => settings
-                    .SetConfiguration(Configuration)
+                .SetConfiguration(Configuration)
 
-                    // Test Coverage
-                    // .SetResultsDirectory(CoverageDirectory)
-                    // .SetCoverletOutput(CoverageResultFile)
-                    // .SetCoverletOutputFormat(CoverletOutputFormat.cobertura)
-                    // .SetExcludeByFile("**/*.g.cs") // Exclude source generated files
-                    // .EnableCollectCoverage()
+                // Test Coverage
+                // .SetResultsDirectory(CoverageDirectory)
+                // .SetCoverletOutput(CoverageResultFile)
+                // .SetCoverletOutputFormat(CoverletOutputFormat.cobertura)
+                // .SetExcludeByFile("**/*.g.cs") // Exclude source generated files
+                // .EnableCollectCoverage()
 
-                    // New Microsoft.Testing.Extensions.CodeCoverage CLI commands
-                    .AddProcessAdditionalArguments("--")
-                    .AddProcessAdditionalArguments("--coverage")
-                    .AddProcessAdditionalArguments("--coverage-output-format cobertura")
-                    .AddProcessAdditionalArguments($"--coverage-output '{CoverageResultFile}'")
+                // New Microsoft.Testing.Extensions.CodeCoverage CLI commands
+                .AddProcessAdditionalArguments("--")
+                .AddProcessAdditionalArguments("--coverage")
+                .AddProcessAdditionalArguments("--coverage-output-format cobertura")
+                .AddProcessAdditionalArguments($"--coverage-output '{CoverageResultFile}'")
             )
         );
 

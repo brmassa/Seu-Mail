@@ -32,13 +32,9 @@ public class MockDnsHttpClient : IDnsHttpClient
     public void SetupDnsResponse(string url, string? response)
     {
         if (response == null)
-        {
             _dnsResponses.Remove(url);
-        }
         else
-        {
             _dnsResponses[url] = response;
-        }
     }
 
     /// <summary>
@@ -79,15 +75,9 @@ public class MockDnsHttpClient : IDnsHttpClient
     {
         _requestHistory.Add(new DnsRequest(url, cancellationToken.IsCancellationRequested));
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromResult<string?>(null);
-        }
+        if (cancellationToken.IsCancellationRequested) return Task.FromResult<string?>(null);
 
-        if (_dnsResponses.TryGetValue(url, out var response))
-        {
-            return Task.FromResult<string?>(response);
-        }
+        if (_dnsResponses.TryGetValue(url, out var response)) return Task.FromResult<string?>(response);
 
         return Task.FromResult<string?>(null);
     }
