@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Seu.Mail.Core.Models;
 using Seu.Mail.Services;
+using Seu.Mail.Tests.TestHelpers;
 
 namespace Seu.Mail.Tests.Services;
 
@@ -14,18 +15,17 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 {
     private readonly ILogger<EmailAutodiscoveryService> _mockLogger;
     private readonly IDnsEmailDiscoveryService _mockDnsService;
-    private readonly HttpClient _httpClient;
+    private readonly MockEmailHttpClient _mockHttpClient;
     private readonly EmailAutodiscoveryService _autodiscoveryService;
 
     public EmailAutodiscoveryServiceTests()
     {
         _mockLogger = Substitute.For<ILogger<EmailAutodiscoveryService>>();
         _mockDnsService = Substitute.For<IDnsEmailDiscoveryService>();
-        _httpClient = new HttpClient();
-        _httpClient.Timeout = TimeSpan.FromSeconds(2); // Very short timeout for tests
+        _mockHttpClient = new MockEmailHttpClient();
 
         _autodiscoveryService = new EmailAutodiscoveryService(
-            _httpClient,
+            _mockHttpClient,
             _mockLogger,
             _mockDnsService);
     }
@@ -506,24 +506,26 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
             "用户@测试.cn"
         };
 
+        // Setup mock responses for international domains - all return null to simulate no autodiscovery
         foreach (var email in internationalEmails)
         {
-            // Act with short timeout
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            try
-            {
-                var result = await _autodiscoveryService.AutodiscoverAsync(email);
-                // Assert - Should handle international domains gracefully
-                // Result may be null, which is acceptable for test environment
-            }
-            catch (TaskCanceledException)
-            {
-                // Expected for slow/invalid domains
-            }
-            catch (Exception)
-            {
-                // Expected for invalid international domains
-            }
+            var domain = email.Split('@')[1];
+
+            // Setup mock responses for all autodiscovery URLs to return null (failed requests)
+            _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml", null);
+            _mockHttpClient.SetupPostResponse($"https://{domain}/autodiscover/autodiscover.xml", null);
+            _mockHttpClient.SetupGetResponse($"https://autoconfig.{domain}/mail/config-v1.1.xml", null);
+            _mockHttpClient.SetupGetResponse($"https://{domain}/.well-known/autoconfig/mail/config-v1.1.xml", null);
+        }
+
+        foreach (var email in internationalEmails)
+        {
+            // Act - This should complete quickly with mock responses
+            var result = await _autodiscoveryService.AutodiscoverAsync(email);
+
+            // Assert - Should handle international domains gracefully
+            // Result should be null since we mocked all requests to fail
+            await Assert.That(result).IsNull();
         }
     }
 
@@ -539,6 +541,7 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
         // Assert
         await Assert.That(result).IsNull();
     }
+
 
     [Test]
     public async Task TryMozillaAutoconfigAsync_WithSubdomains_ShouldHandleCorrectly()
@@ -620,9 +623,197 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 
     #endregion
 
+    #region Mock Client Tests
+
+    [Test]
+    public async Task AutodiscoverAsync_WithMockedResponses_ShouldReturnExpectedSettings()
+    {
+        // Arrange
+        var emailAddress = "user@example.com";
+        var domain = "example.com";
+
+        // Setup successful Outlook autodiscover response
+        var outlookResponse = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<Autodiscover xmlns=""http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a"">
+    <Response xmlns=""http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a"">
+        <Account>
+            <AccountType>email</AccountType>
+            <Action>settings</Action>
+            <Protocol>
+                <Type>IMAP</Type>
+                <Server>imap.example.com</Server>
+                <Port>993</Port>
+                <SSL>on</SSL>
+            </Protocol>
+            <Protocol>
+                <Type>SMTP</Type>
+                <Server>smtp.example.com</Server>
+                <Port>587</Port>
+                <SSL>on</SSL>
+            </Protocol>
+        </Account>
+    </Response>
+</Autodiscover>";
+
+        _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml", outlookResponse);
+
+        // Act
+        var result = await _autodiscoveryService.AutodiscoverAsync(emailAddress);
+
+        // Assert
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.DisplayName).IsEqualTo("Outlook Autodiscovered (example.com)");
+        await Assert.That(result.ImapServer).IsEqualTo("imap.example.com");
+        await Assert.That(result.ImapPort).IsEqualTo(993);
+        await Assert.That(result.SmtpServer).IsEqualTo("smtp.example.com");
+        await Assert.That(result.SmtpPort).IsEqualTo(587);
+        await Assert.That(result.UseSsl).IsTrue();
+
+        // Verify HTTP client was called correctly
+        await Assert.That(_mockHttpClient.RequestHistory.Count).IsEqualTo(1);
+        var request = _mockHttpClient.RequestHistory[0];
+        await Assert.That(request.Method).IsEqualTo("POST");
+        await Assert.That(request.Url).Contains("autodiscover");
+        await Assert.That(request.ContentType).IsEqualTo("text/xml");
+    }
+
+    [Test]
+    public async Task TryMozillaAutoconfigAsync_WithMockedResponse_ShouldCompleteQuickly()
+    {
+        // Arrange
+        var domain = "fasttest.com";
+        var mozillaResponse = @"<?xml version=""1.0""?>
+<clientConfig version=""1.1"">
+    <emailProvider id=""fasttest.com"">
+        <displayName>Fast Test Provider</displayName>
+        <incomingServer type=""imap"">
+            <hostname>imap.fasttest.com</hostname>
+            <port>993</port>
+            <socketType>SSL</socketType>
+        </incomingServer>
+        <outgoingServer type=""smtp"">
+            <hostname>smtp.fasttest.com</hostname>
+            <port>587</port>
+            <socketType>STARTTLS</socketType>
+        </outgoingServer>
+    </emailProvider>
+</clientConfig>";
+
+        _mockHttpClient.SetupGetResponse($"https://autoconfig.{domain}/mail/config-v1.1.xml", mozillaResponse);
+
+        var startTime = DateTime.UtcNow;
+
+        // Act
+        var result = await _autodiscoveryService.TryMozillaAutoconfigAsync(domain);
+
+        // Assert
+        var duration = DateTime.UtcNow - startTime;
+        await Assert.That(duration.TotalMilliseconds).IsLessThan(100); // Should complete in under 100ms
+
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.DisplayName).IsEqualTo("Mozilla Autodiscovered (fasttest.com)");
+        await Assert.That(result.ImapServer).IsEqualTo("imap.fasttest.com");
+    }
+
+    #endregion
+
+    #region Performance Tests
+
+    [Test]
+    public async Task AutodiscoverAsync_WithMockedResponses_ShouldCompleteUnder100ms()
+    {
+        // Arrange
+        var testDomains = new[]
+        {
+            "performance1.com",
+            "performance2.com",
+            "performance3.com"
+        };
+
+        // Setup mock responses for all test domains to fail quickly
+        foreach (var domain in testDomains)
+        {
+            _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml", null);
+            _mockHttpClient.SetupGetResponse($"https://autoconfig.{domain}/mail/config-v1.1.xml", null);
+        }
+
+        var startTime = DateTime.UtcNow;
+
+        // Act - Test multiple domains in sequence
+        foreach (var domain in testDomains)
+        {
+            await _autodiscoveryService.AutodiscoverAsync($"test@{domain}");
+        }
+
+        // Assert
+        var totalDuration = DateTime.UtcNow - startTime;
+        await Assert.That(totalDuration.TotalMilliseconds).IsLessThan(100); // Should complete very quickly
+
+        // Verify mock was used (should have made HTTP requests)
+        await Assert.That(_mockHttpClient.RequestHistory.Count).IsGreaterThan(0);
+    }
+
+    [Test]
+    public async Task AllAutodiscoveryMethods_WithMockedFailures_ShouldCompleteRapidly()
+    {
+        // This test demonstrates that all autodiscovery methods complete quickly
+        // when using mocked HTTP responses, compared to real network timeouts
+
+        // Arrange
+        var testDomain = "rapid-test.example";
+        var testEmail = $"user@{testDomain}";
+
+        // Setup all mock responses to return null (simulate failures)
+        var autodiscoverUrls = new[]
+        {
+            $"https://autodiscover.{testDomain}/autodiscover/autodiscover.xml",
+            $"https://{testDomain}/autodiscover/autodiscover.xml",
+            $"https://autodiscover.{testDomain}/Autodiscover/Autodiscover.xml",
+            "https://autodiscover-s.outlook.com/autodiscover/autodiscover.xml"
+        };
+
+        var autoconfigUrls = new[]
+        {
+            $"https://autoconfig.{testDomain}/mail/config-v1.1.xml",
+            $"https://{testDomain}/.well-known/autoconfig/mail/config-v1.1.xml"
+        };
+
+        foreach (var url in autodiscoverUrls)
+        {
+            _mockHttpClient.SetupPostResponse(url, null);
+        }
+
+        foreach (var url in autoconfigUrls)
+        {
+            _mockHttpClient.SetupGetResponse(url, null);
+        }
+
+        var startTime = DateTime.UtcNow;
+
+        // Act - Try all autodiscovery methods
+        var outlookResult = await _autodiscoveryService.TryOutlookAutodiscoverAsync(testEmail);
+        var mozillaResult = await _autodiscoveryService.TryMozillaAutoconfigAsync(testDomain);
+        var appleResult = await _autodiscoveryService.TryAppleAutoconfigAsync(testDomain);
+        var wellKnownResult = await _autodiscoveryService.TryWellKnownAutoconfigAsync(testDomain);
+
+        var duration = DateTime.UtcNow - startTime;
+
+        // Assert
+        await Assert.That(duration.TotalMilliseconds).IsLessThan(500); // All methods should complete in under 500ms
+        await Assert.That(outlookResult).IsNull(); // All should fail as expected
+        await Assert.That(mozillaResult).IsNull();
+        await Assert.That(appleResult).IsNull();
+        await Assert.That(wellKnownResult).IsNull();
+
+        // Verify we made the expected number of HTTP calls through our mock
+        await Assert.That(_mockHttpClient.RequestHistory.Count).IsGreaterThan(5);
+    }
+
+    #endregion
+
     public async ValueTask DisposeAsync()
     {
-        _httpClient?.Dispose();
+        _mockHttpClient?.Reset();
         await Task.CompletedTask;
     }
 }
