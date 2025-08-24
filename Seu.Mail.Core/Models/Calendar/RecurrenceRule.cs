@@ -109,17 +109,26 @@ public record RecurrenceRule
     /// <summary>
     /// Gets the days of week as a list
     /// </summary>
-    public List<DayOfWeek> GetDaysOfWeek() => ParseDaysOfWeek(ByDayOfWeek);
+    public List<DayOfWeek> GetDaysOfWeek()
+    {
+        return ParseDaysOfWeek(ByDayOfWeek);
+    }
 
     /// <summary>
     /// Gets the days of month as a list
     /// </summary>
-    public List<int> GetDaysOfMonth() => ParseCommaSeparatedInts(ByDayOfMonth);
+    public List<int> GetDaysOfMonth()
+    {
+        return ParseCommaSeparatedInts(ByDayOfMonth);
+    }
 
     /// <summary>
     /// Gets the months as a list
     /// </summary>
-    public List<int> GetMonths() => ParseCommaSeparatedInts(ByMonth);
+    public List<int> GetMonths()
+    {
+        return ParseCommaSeparatedInts(ByMonth);
+    }
 }
 
 /// <summary>
@@ -131,14 +140,17 @@ public enum RecurrenceFrequency
     /// Daily recurrence.
     /// </summary>
     Daily = 1,
+
     /// <summary>
     /// Weekly recurrence.
     /// </summary>
     Weekly = 2,
+
     /// <summary>
     /// Monthly recurrence.
     /// </summary>
     Monthly = 3,
+
     /// <summary>
     /// Yearly recurrence.
     /// </summary>

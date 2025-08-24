@@ -84,12 +84,10 @@ public class AccountService : IAccountService
                 .FirstOrDefaultAsync(a => a.IsDefault);
 
             if (defaultAccount == null)
-            {
                 // If no default is set, return the first account
                 defaultAccount = await _context.EmailAccounts
                     .OrderBy(a => a.CreatedAt)
                     .FirstOrDefaultAsync();
-            }
 
             return defaultAccount;
         }
@@ -143,20 +141,13 @@ public class AccountService : IAccountService
 
             // Sanitize display name
             if (!string.IsNullOrWhiteSpace(account.DisplayName))
-            {
                 account.DisplayName = _validationService.SanitizeInput(account.DisplayName);
-            }
             else
-            {
                 account.DisplayName = account.Email;
-            }
 
             // If this is the first account, make it default
             var accountCount = await _context.EmailAccounts.CountAsync();
-            if (accountCount == 0)
-            {
-                account.IsDefault = true;
-            }
+            if (accountCount == 0) account.IsDefault = true;
 
             account.CreatedAt = DateTime.UtcNow;
             _context.EmailAccounts.Add(account);
@@ -205,14 +196,14 @@ public class AccountService : IAccountService
 
             // Check if password was actually changed (UI sends "***UNCHANGED***" placeholder when not changed)
             if (!string.IsNullOrEmpty(currentPassword) && currentPassword != "***UNCHANGED***")
-            {
                 // Password was changed - decrypt existing to compare
                 try
                 {
                     if (string.IsNullOrEmpty(existingAccount.EncryptedPassword))
                     {
                         _logger.LogWarning("Existing account has null or empty encrypted password");
-                        existingAccount.EncryptedPassword = _encryptionService.EncryptString(currentPassword ?? string.Empty);
+                        existingAccount.EncryptedPassword =
+                            _encryptionService.EncryptString(currentPassword ?? string.Empty);
                     }
                     else
                     {
@@ -221,18 +212,22 @@ public class AccountService : IAccountService
                         // Only update if the plaintext passwords are actually different
                         if (currentPassword != existingDecrypted)
                         {
-                            _logger.LogInformation("Password changed for account {Email}, updating encrypted password", account.Email);
-                            existingAccount.EncryptedPassword = _encryptionService.EncryptString(currentPassword ?? string.Empty) ?? string.Empty;
+                            _logger.LogInformation("Password changed for account {Email}, updating encrypted password",
+                                account.Email);
+                            existingAccount.EncryptedPassword =
+                                _encryptionService.EncryptString(currentPassword ?? string.Empty) ?? string.Empty;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Failed to decrypt existing password for comparison: {Error}. Assuming password changed.", ex.Message);
+                    _logger.LogWarning(
+                        "Failed to decrypt existing password for comparison: {Error}. Assuming password changed.",
+                        ex.Message);
                     // If we can't decrypt existing, assume password changed and encrypt the new one
-                    existingAccount.EncryptedPassword = _encryptionService.EncryptString(currentPassword ?? string.Empty) ?? string.Empty;
+                    existingAccount.EncryptedPassword =
+                        _encryptionService.EncryptString(currentPassword ?? string.Empty) ?? string.Empty;
                 }
-            }
             // If password is "***UNCHANGED***" or empty, don't modify the existing encrypted password
 
             existingAccount.SmtpServer = account.SmtpServer;
@@ -276,10 +271,7 @@ public class AccountService : IAccountService
                     .Where(a => a.Id != id)
                     .FirstOrDefaultAsync();
 
-                if (nextAccount != null)
-                {
-                    nextAccount.IsDefault = true;
-                }
+                if (nextAccount != null) nextAccount.IsDefault = true;
             }
 
             _context.EmailAccounts.Remove(account);
@@ -306,10 +298,7 @@ public class AccountService : IAccountService
         {
             // Remove default from all accounts
             var allAccounts = await _context.EmailAccounts.ToListAsync();
-            foreach (var account in allAccounts)
-            {
-                account.IsDefault = false;
-            }
+            foreach (var account in allAccounts) account.IsDefault = false;
 
             // Set the specified account as default
             var targetAccount = allAccounts.FirstOrDefault(a => a.Id == id);
@@ -342,7 +331,7 @@ public class AccountService : IAccountService
         try
         {
             string passwordToUse;
-            bool isNewPassword = false;
+            var isNewPassword = false;
 
             // Check if this is a new password from the UI or unchanged placeholder
             if (!string.IsNullOrEmpty(account.Password) && account.Password != "***UNCHANGED***")
@@ -350,17 +339,17 @@ public class AccountService : IAccountService
                 // New password from UI - use it directly (it's plaintext)
                 passwordToUse = account.Password;
                 isNewPassword = true;
-                _logger.LogWarning("ValidateAccount: Using new password from UI, length: {Length}", passwordToUse?.Length ?? 0);
+                _logger.LogWarning("ValidateAccount: Using new password from UI, length: {Length}",
+                    passwordToUse?.Length ?? 0);
             }
             else
             {
                 // No new password provided - decrypt the existing encrypted password
                 if (string.IsNullOrEmpty(account.EncryptedPassword))
-                {
                     throw new ArgumentException("Account has no password set");
-                }
                 passwordToUse = _encryptionService.DecryptString(account.EncryptedPassword);
-                _logger.LogWarning("ValidateAccount: Using existing decrypted password, length: {Length}", passwordToUse?.Length ?? 0);
+                _logger.LogWarning("ValidateAccount: Using existing decrypted password, length: {Length}",
+                    passwordToUse?.Length ?? 0);
             }
 
             // Handle legacy password data and re-encrypt if needed (only for existing passwords)
@@ -377,9 +366,9 @@ public class AccountService : IAccountService
             }
 
             // Create a test account with the password properly encrypted for the EmailService
-            var encryptedPasswordForTest = isNewPassword ?
-                _encryptionService.EncryptString(passwordToUse ?? string.Empty) :
-                account.EncryptedPassword;
+            var encryptedPasswordForTest = isNewPassword
+                ? _encryptionService.EncryptString(passwordToUse ?? string.Empty)
+                : account.EncryptedPassword;
 
             var testAccount = new EmailAccount
             {

@@ -198,7 +198,7 @@ public class ValidationServiceTests
             Email = "test@example.com",
             Password = "Password123!",
             ImapServer = "", // Invalid server
-            ImapPort = 0     // Invalid port
+            ImapPort = 0 // Invalid port
         };
 
         // Act
@@ -232,7 +232,8 @@ public class ValidationServiceTests
     [Arguments("invalid_server", 587, false)]
     [Arguments("smtp.gmail.com", 0, false)]
     [Arguments("smtp.gmail.com", 70000, false)]
-    public async Task ValidateServerSettings_WithInvalidServers_ShouldReturnFalse(string? server, int port, bool expected)
+    public async Task ValidateServerSettings_WithInvalidServers_ShouldReturnFalse(string? server, int port,
+        bool expected)
     {
         // Act
         var result = _validationService.ValidateServerSettings(server!, port);
@@ -336,10 +337,7 @@ public class ValidationServiceTests
     {
         // Arrange
         var emails = new List<string>();
-        for (int i = 0; i < 50; i++)
-        {
-            emails.Add($"user{i}@example.com");
-        }
+        for (var i = 0; i < 50; i++) emails.Add($"user{i}@example.com");
 
         // Act & Assert
         foreach (var email in emails)
@@ -354,10 +352,7 @@ public class ValidationServiceTests
     {
         // Arrange
         var passwords = new List<string>();
-        for (int i = 0; i < 50; i++)
-        {
-            passwords.Add($"Password{i}!");
-        }
+        for (var i = 0; i < 50; i++) passwords.Add($"Password{i}!");
 
         // Act & Assert
         foreach (var password in passwords)

@@ -16,7 +16,7 @@ public class FolderTagServiceTests : IAsyncDisposable
     public FolderTagServiceTests()
     {
         var options = new DbContextOptionsBuilder<EmailDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _context = new EmailDbContext(options);
@@ -430,9 +430,21 @@ public class FolderTagServiceTests : IAsyncDisposable
         var folder = new EmailFolder { Id = 1, AccountId = 1, Name = "INBOX" };
         var messages = new List<EmailMessage>
         {
-            new() { Id = 1, AccountId = 1, Folder = "INBOX", Subject = "Test 1", IsRead = false, MessageId = "test1@example.com" },
-            new() { Id = 2, AccountId = 1, Folder = "INBOX", Subject = "Test 2", IsRead = true, MessageId = "test2@example.com" },
-            new() { Id = 3, AccountId = 1, Folder = "INBOX", Subject = "Test 3", IsRead = false, MessageId = "test3@example.com" }
+            new()
+            {
+                Id = 1, AccountId = 1, Folder = "INBOX", Subject = "Test 1", IsRead = false,
+                MessageId = "test1@example.com"
+            },
+            new()
+            {
+                Id = 2, AccountId = 1, Folder = "INBOX", Subject = "Test 2", IsRead = true,
+                MessageId = "test2@example.com"
+            },
+            new()
+            {
+                Id = 3, AccountId = 1, Folder = "INBOX", Subject = "Test 3", IsRead = false,
+                MessageId = "test3@example.com"
+            }
         };
 
         await _context.EmailFolders.AddAsync(folder);
@@ -483,10 +495,7 @@ public class FolderTagServiceTests : IAsyncDisposable
 
         // Assert
         await Assert.That(result.Count).IsEqualTo(2);
-        foreach (var tag in result)
-        {
-            await Assert.That(tag.AccountId).IsEqualTo(1);
-        }
+        foreach (var tag in result) await Assert.That(tag.AccountId).IsEqualTo(1);
     }
 
     #endregion

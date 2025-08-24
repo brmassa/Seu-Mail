@@ -51,7 +51,7 @@
         var firstDay = Settings?.FirstDayOfWeek ?? DayOfWeek.Monday;
         var days = new List<string>();
 
-        for (int i = 0; i < 7; i++)
+        for (var i = 0; i < 7; i++)
         {
             var dayOfWeek = (DayOfWeek)(((int)firstDay + i) % 7);
             days.Add(dayOfWeek.ToString().Substring(0, 3));
@@ -125,8 +125,8 @@
         if (Events == null) return new List<CalendarEvent>();
 
         return Events.Where(e =>
-            e.StartDateTime.Date <= day.Date &&
-            e.EndDateTime.Date >= day.Date)
+                e.StartDateTime.Date <= day.Date &&
+                e.EndDateTime.Date >= day.Date)
             .OrderBy(e => e.StartDateTime)
             .Take(3) // Limit to 3 events per day for display
             .ToList();
@@ -141,128 +141,129 @@
     {
         await OnEventClick.InvokeAsync(evt);
     }
+
 }
 
 <style>
-.month-view {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
+    .month-view {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-.calendar-grid {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-}
+    .calendar-grid {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
 
-.calendar-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
+    .calendar-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
 
-.day-header {
-    padding: 0.75rem;
-    text-align: center;
-    font-weight: 600;
-    border-right: 1px solid #dee2e6;
-}
+    .day-header {
+        padding: 0.75rem;
+        text-align: center;
+        font-weight: 600;
+        border-right: 1px solid #dee2e6;
+    }
 
-.day-header:last-child {
-    border-right: none;
-}
+    .day-header:last-child {
+        border-right: none;
+    }
 
-.calendar-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
+    .calendar-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
 
-.calendar-week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    flex: 1;
-    min-height: 120px;
-}
+    .calendar-week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        flex: 1;
+        min-height: 120px;
+    }
 
-.calendar-day {
-    border-right: 1px solid #dee2e6;
-    border-bottom: 1px solid #dee2e6;
-    padding: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    flex-direction: column;
-    min-height: 100px;
-}
+    .calendar-day {
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        flex-direction: column;
+        min-height: 100px;
+    }
 
-.calendar-day:hover {
-    background-color: #f8f9fa;
-}
+    .calendar-day:hover {
+        background-color: #f8f9fa;
+    }
 
-.calendar-day:last-child {
-    border-right: none;
-}
+    .calendar-day:last-child {
+        border-right: none;
+    }
 
-.calendar-week:last-child .calendar-day {
-    border-bottom: none;
-}
+    .calendar-week:last-child .calendar-day {
+        border-bottom: none;
+    }
 
-.calendar-day.other-month {
-    color: #6c757d;
-    background-color: #f8f9fa;
-}
+    .calendar-day.other-month {
+        color: #6c757d;
+        background-color: #f8f9fa;
+    }
 
-.calendar-day.today {
-    background-color: #fff3cd;
-}
+    .calendar-day.today {
+        background-color: #fff3cd;
+    }
 
-.calendar-day.weekend {
-    background-color: #f8f9fa;
-}
+    .calendar-day.weekend {
+        background-color: #f8f9fa;
+    }
 
-.day-number {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
+    .day-number {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
 
-.day-events {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
+    .day-events {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
 
-.event-item {
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 0.75rem;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 18px;
-    overflow: hidden;
-}
+    .event-item {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 18px;
+        overflow: hidden;
+    }
 
-.event-item:hover {
-    opacity: 0.8;
-}
+    .event-item:hover {
+        opacity: 0.8;
+    }
 
-.event-title {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    .event-title {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.event-time {
-    font-size: 0.6rem;
-    margin-left: 4px;
-}
+    .event-time {
+        font-size: 0.6rem;
+        margin-left: 4px;
+    }
 </style>

@@ -375,7 +375,7 @@ public class EmailMessageTests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         // Act
-        for (int i = 0; i < 1000; i++)
+        for (var i = 0; i < 1000; i++)
         {
             var message = new EmailMessage
             {
@@ -386,6 +386,7 @@ public class EmailMessageTests
                 Subject = $"Subject {i}"
             };
         }
+
         stopwatch.Stop();
 
         // Assert
@@ -426,9 +427,9 @@ public class EmailMessageTests
 
     // Helper Methods
 
-    private static List<System.ComponentModel.DataAnnotations.ValidationResult> ValidateModel(object model)
+    private static List<ValidationResult> ValidateModel(object model)
     {
-        var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationResults = new List<ValidationResult>();
         var validationContext = new ValidationContext(model);
         Validator.TryValidateObject(model, validationContext, validationResults, true);
         return validationResults;

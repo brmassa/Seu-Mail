@@ -75,12 +75,14 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
             provider = await TryCommonDomainVariationsAsync(domain);
             if (provider != null)
             {
-                _logger.LogInformation("Provider detected via domain variation for {Email}: {Provider}", emailAddress, provider.DisplayName);
+                _logger.LogInformation("Provider detected via domain variation for {Email}: {Provider}", emailAddress,
+                    provider.DisplayName);
                 return provider;
             }
 
             // If no configuration found, try comprehensive autodiscovery
-            _logger.LogInformation("No provider configuration found for domain: {Domain}, attempting comprehensive autodiscovery", domain);
+            _logger.LogInformation(
+                "No provider configuration found for domain: {Domain}, attempting comprehensive autodiscovery", domain);
 
             var autodiscoveredProvider = await _autodiscoveryService.AutodiscoverAsync(emailAddress);
             if (autodiscoveredProvider != null)
@@ -89,7 +91,8 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 return autodiscoveredProvider;
             }
 
-            _logger.LogInformation("Comprehensive autodiscovery failed, attempting fallback probe for domain: {Domain}", domain);
+            _logger.LogInformation("Comprehensive autodiscovery failed, attempting fallback probe for domain: {Domain}",
+                domain);
             return await ProbeEmailServersAsync(domain);
         }
         catch (Exception ex)
@@ -178,7 +181,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
     {
         return new Dictionary<string, EmailProviderSettings>
         {
-            ["Gmail"] = new EmailProviderSettings
+            ["Gmail"] = new()
             {
                 DisplayName = "Gmail",
                 SmtpServer = "smtp.gmail.com",
@@ -188,7 +191,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["gmail.com", "googlemail.com"]
             },
-            ["Outlook"] = new EmailProviderSettings
+            ["Outlook"] = new()
             {
                 DisplayName = "Outlook/Hotmail",
                 SmtpServer = "smtp-mail.outlook.com",
@@ -198,7 +201,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["outlook.com", "hotmail.com", "live.com", "msn.com"]
             },
-            ["Yahoo"] = new EmailProviderSettings
+            ["Yahoo"] = new()
             {
                 DisplayName = "Yahoo Mail",
                 SmtpServer = "smtp.mail.yahoo.com",
@@ -208,7 +211,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["yahoo.com", "yahoo.co.uk", "yahoo.ca", "ymail.com"]
             },
-            ["Zoho"] = new EmailProviderSettings
+            ["Zoho"] = new()
             {
                 DisplayName = "Zoho Mail",
                 SmtpServer = "smtp.zoho.com",
@@ -218,7 +221,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["zoho.com", "zohomail.com"]
             },
-            ["Fastmail"] = new EmailProviderSettings
+            ["Fastmail"] = new()
             {
                 DisplayName = "Fastmail",
                 SmtpServer = "smtp.fastmail.com",
@@ -228,7 +231,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["fastmail.com", "fastmail.fm"]
             },
-            ["AOL"] = new EmailProviderSettings
+            ["AOL"] = new()
             {
                 DisplayName = "AOL Mail",
                 SmtpServer = "smtp.aol.com",
@@ -238,7 +241,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                 UseSsl = true,
                 DomainPatterns = ["aol.com"]
             },
-            ["iCloud"] = new EmailProviderSettings
+            ["iCloud"] = new()
             {
                 DisplayName = "iCloud Mail",
                 SmtpServer = "smtp.mail.me.com",
@@ -271,10 +274,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
 
             // First try configuration-based detection
             var configProvider = await DetectProviderAsync(testEmailAddress);
-            if (configProvider != null)
-            {
-                return configProvider;
-            }
+            if (configProvider != null) return configProvider;
 
             // If no config found, use comprehensive autodiscovery
             return await _autodiscoveryService.AutodiscoverAsync(testEmailAddress);
@@ -316,15 +316,14 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
             var imapPorts = new[] { 993, 143 };
 
             string? workingSmtpServer = null;
-            int workingSmtpPort = 587;
+            var workingSmtpPort = 587;
             string? workingImapServer = null;
-            int workingImapPort = 993;
+            var workingImapPort = 993;
 
             // Probe SMTP servers
             foreach (var server in commonSmtpServers)
             {
                 foreach (var port in smtpPorts)
-                {
                     if (await ProbeSmtpServerAsync(server, port))
                     {
                         workingSmtpServer = server;
@@ -332,7 +331,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                         _logger.LogInformation("Found working SMTP server: {Server}:{Port}", server, port);
                         break;
                     }
-                }
+
                 if (workingSmtpServer != null) break;
             }
 
@@ -340,7 +339,6 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
             foreach (var server in commonImapServers)
             {
                 foreach (var port in imapPorts)
-                {
                     if (await ProbeImapServerAsync(server, port))
                     {
                         workingImapServer = server;
@@ -348,13 +346,12 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                         _logger.LogInformation("Found working IMAP server: {Server}:{Port}", server, port);
                         break;
                     }
-                }
+
                 if (workingImapServer != null) break;
             }
 
             // If we found working servers, create a provider configuration
             if (workingSmtpServer != null && workingImapServer != null)
-            {
                 return new EmailProviderSettings
                 {
                     DisplayName = $"Auto-detected ({domain})",
@@ -365,7 +362,6 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                     UseSsl = workingSmtpPort != 25 && workingImapPort != 143, // Use SSL for secure ports
                     DomainPatterns = [domain]
                 };
-            }
 
             _logger.LogWarning("Could not probe working email servers for domain: {Domain}", domain);
             return null;
@@ -390,8 +386,8 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
             client.Timeout = 8000; // 8 second timeout
 
             var sslOptions = port == 465 ? SecureSocketOptions.SslOnConnect :
-                           port == 25 ? SecureSocketOptions.None :
-                           SecureSocketOptions.StartTls;
+                port == 25 ? SecureSocketOptions.None :
+                SecureSocketOptions.StartTls;
 
             try
             {
@@ -472,13 +468,10 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
     private EmailProviderSettings? FindProviderByDomain(string domain)
     {
         foreach (var provider in _providers.Values)
-        {
             if (provider.DomainPatterns.Any(pattern =>
-                string.Equals(pattern, domain, StringComparison.OrdinalIgnoreCase)))
-            {
+                    string.Equals(pattern, domain, StringComparison.OrdinalIgnoreCase)))
                 return provider;
-            }
-        }
+
         return null;
     }
 
@@ -496,10 +489,7 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
         foreach (var variation in variations.Distinct())
         {
             var provider = FindProviderByDomain(variation);
-            if (provider != null)
-            {
-                return provider;
-            }
+            if (provider != null) return provider;
         }
 
         return await Task.FromResult<EmailProviderSettings?>(null);
@@ -542,6 +532,4 @@ public class EmailProviderDetectionService : IEmailProviderDetectionService
                settings is { SmtpPort: > 0, ImapPort: > 0 } &&
                settings.DomainPatterns.Any();
     }
-
-
 }

@@ -12,7 +12,8 @@
     @if (accounts.Any())
     {
         <div class="dropdown">
-            <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button"
+                    data-bs-toggle="dropdown">
                 <div class="d-flex align-items-center">
                     <div class="avatar me-2">
                         <i class="fas fa-user-circle"></i>
@@ -45,7 +46,9 @@
                         </a>
                     </li>
                 }
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 <li>
                     <a class="dropdown-item" href="/accounts">
                         <i class="fas fa-plus me-2"></i>
@@ -74,10 +77,12 @@
 </div>
 
 @code {
+
     /// <summary>
     /// Event callback triggered when an account is selected from the dropdown.
     /// </summary>
-    [Parameter] public EventCallback<EmailAccount> OnAccountChanged { get; set; }
+    [Parameter]
+    public EventCallback<EmailAccount> OnAccountChanged { get; set; }
 
     private List<EmailAccount> accounts = new();
     private EmailAccount? selectedAccount;
@@ -123,4 +128,5 @@
     {
         await LoadAccounts();
     }
+
 }

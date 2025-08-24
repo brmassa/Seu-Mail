@@ -24,7 +24,8 @@
                     <i class="fas fa-check-square"></i>
                     Select All
                 </button>
-                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected" disabled="@(!selectedEmails.Any())">
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected"
+                        disabled="@(!selectedEmails.Any())">
                     <i class="fas fa-trash"></i>
                     Delete (@selectedEmails.Count)
                 </button>
@@ -68,7 +69,8 @@
                                    @onclick:stopPropagation="true">
                         </div>
 
-                        <div class="email-content flex-grow-1" @onclick="() => EditDraft(email.Id)" @onclick:stopPropagation="true">
+                        <div class="email-content flex-grow-1" @onclick="() => EditDraft(email.Id)"
+                             @onclick:stopPropagation="true">
                             <div class="email-header d-flex justify-content-between align-items-start">
                                 <div class="email-recipient">
                                     <strong class="recipient-name">
@@ -83,7 +85,8 @@
                                     </strong>
                                     @if (!string.IsNullOrEmpty(email.To))
                                     {
-                                        <span class="recipient-email text-muted ms-1">@GetRecipientEmail(email.To)</span>
+                                        <span
+                                            class="recipient-email text-muted ms-1">@GetRecipientEmail(email.To)</span>
                                     }
                                 </div>
                                 <div class="email-meta text-muted">
@@ -121,13 +124,16 @@
                         </div>
 
                         <div class="email-actions">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditDraft(email.Id)" @onclick:stopPropagation="true" title="Edit Draft">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditDraft(email.Id)"
+                                    @onclick:stopPropagation="true" title="Edit Draft">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-success" @onclick="() => SendDraft(email.Id)" @onclick:stopPropagation="true" title="Send Now">
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => SendDraft(email.Id)"
+                                    @onclick:stopPropagation="true" title="Send Now">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmail(email.Id)" @onclick:stopPropagation="true" title="Delete Draft">
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmail(email.Id)"
+                                    @onclick:stopPropagation="true" title="Delete Draft">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -165,7 +171,9 @@
                     <button type="button" class="btn-close" @onclick="HideSendModal"></button>
                 </div>
                 <div class="modal-body">
-                    <p><strong>Subject:</strong> @(HtmlUtilityService.StripHtml(draftToSend.Subject ?? "") ?? "(No subject)")</p>
+                    <p>
+                        <strong>Subject:</strong> @(HtmlUtilityService.StripHtml(draftToSend.Subject ?? "") ?? "(No subject)")
+                    </p>
                     <p><strong>To:</strong> @(draftToSend.To ?? "(No recipient)")</p>
                     @if (!string.IsNullOrEmpty(draftToSend.Cc))
                     {
@@ -403,11 +411,9 @@
                 return;
             }
 
-            var ccEmails = !string.IsNullOrEmpty(draftToSend.Cc) ?
-                string.Join(",", draftToSend.Cc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
+            var ccEmails = !string.IsNullOrEmpty(draftToSend.Cc) ? string.Join(",", draftToSend.Cc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
 
-            var bccEmails = !string.IsNullOrEmpty(draftToSend.Bcc) ?
-                string.Join(",", draftToSend.Bcc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
+            var bccEmails = !string.IsNullOrEmpty(draftToSend.Bcc) ? string.Join(",", draftToSend.Bcc.Split(';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e))) : null;
 
             var body = !string.IsNullOrEmpty(draftToSend.HtmlBody) ? draftToSend.HtmlBody : draftToSend.TextBody ?? "";
 
@@ -516,7 +522,6 @@
     }
 
 
-
     private void ShowToast(string title, string message)
     {
         toastTitle = title;
@@ -530,4 +535,5 @@
             InvokeAsync(StateHasChanged);
         });
     }
+
 }

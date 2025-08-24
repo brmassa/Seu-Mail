@@ -82,10 +82,7 @@ public class SecurityMiddleware
             "frame-ancestors 'none';";
 
         // Strict Transport Security (if HTTPS)
-        if (context.Request.IsHttps)
-        {
-            headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
-        }
+        if (context.Request.IsHttps) headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
 
         // Permissions Policy
         headers["Permissions-Policy"] = "camera=(), microphone=(), location=(), usb=()";
@@ -117,18 +114,15 @@ public class SecurityMiddleware
             userAgent.ToLower().Contains(pattern));
 
         if (isSuspicious)
-        {
-            _logger.LogWarning("Suspicious request detected. Method: {Method}, Path: {Path}, Query: {Query}, UserAgent: {UserAgent}, IP: {IP}",
+            _logger.LogWarning(
+                "Suspicious request detected. Method: {Method}, Path: {Path}, Query: {Query}, UserAgent: {UserAgent}, IP: {IP}",
                 method, path, queryString, userAgent, context.Connection.RemoteIpAddress);
-        }
 
         // Log requests to sensitive endpoints
         var sensitiveEndpoints = new[] { "/accounts", "/settings", "/api" };
         if (sensitiveEndpoints.Any(endpoint => path.StartsWith(endpoint, StringComparison.OrdinalIgnoreCase)))
-        {
             _logger.LogInformation("Access to sensitive endpoint. Method: {Method}, Path: {Path}, IP: {IP}",
                 method, path, context.Connection.RemoteIpAddress);
-        }
     }
 
     /// <summary>

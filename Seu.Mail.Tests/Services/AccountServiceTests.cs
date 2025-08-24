@@ -21,7 +21,7 @@ public class AccountServiceTests : IAsyncDisposable
     public AccountServiceTests()
     {
         var options = new DbContextOptionsBuilder<EmailDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _context = new EmailDbContext(options);
@@ -532,7 +532,8 @@ public class AccountServiceTests : IAsyncDisposable
     {
         // Arrange
         var account = new EmailAccount { Email = "test@example.com" };
-        _mockEmailService.TestConnectionAsync(Arg.Any<EmailAccount>()).Returns(Task.FromException<ConnectionTestResult>(new Exception("Connection error")));
+        _mockEmailService.TestConnectionAsync(Arg.Any<EmailAccount>())
+            .Returns(Task.FromException<ConnectionTestResult>(new Exception("Connection error")));
 
         // Act
         var result = await _accountService.ValidateAccountAsync(account);

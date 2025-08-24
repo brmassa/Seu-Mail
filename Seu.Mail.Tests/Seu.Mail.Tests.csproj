@@ -15,27 +15,27 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
+        <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2"/>
 
-        <PackageReference Include="TUnit" Version="0.57.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.8" />
-        <PackageReference Include="NSubstitute" Version="5.3.0" />
-        <PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
-        <PackageReference Include="MailKit" Version="4.13.0" />
-        <PackageReference Include="MimeKit" Version="4.13.0" />
+        <PackageReference Include="TUnit" Version="0.57.1"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.8"/>
+        <PackageReference Include="NSubstitute" Version="5.3.0"/>
+        <PackageReference Include="HtmlAgilityPack" Version="1.12.2"/>
+        <PackageReference Include="MailKit" Version="4.13.0"/>
+        <PackageReference Include="MimeKit" Version="4.13.0"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj" />
-        <ProjectReference Include="..\Seu.Mail.Contracts\Seu.Mail.Contracts.csproj" />
-        <ProjectReference Include="..\Seu.Mail.Data\Seu.Mail.Data.csproj" />
-        <ProjectReference Include="..\Seu.Mail.Services\Seu.Mail.Services.csproj" />
-        <ProjectReference Include="..\Seu.Mail.Web\Seu.Mail.Web.csproj" />
+        <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Contracts\Seu.Mail.Contracts.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Data\Seu.Mail.Data.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Services\Seu.Mail.Services.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Web\Seu.Mail.Web.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

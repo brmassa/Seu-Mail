@@ -24,11 +24,13 @@
                     <i class="fas fa-check-square"></i>
                     Select All
                 </button>
-                <button class="btn btn-outline-success btn-sm me-2" @onclick="RestoreSelected" disabled="@(!selectedEmails.Any())">
+                <button class="btn btn-outline-success btn-sm me-2" @onclick="RestoreSelected"
+                        disabled="@(!selectedEmails.Any())">
                     <i class="fas fa-undo"></i>
                     Restore (@selectedEmails.Count)
                 </button>
-                <button class="btn btn-outline-danger btn-sm me-2" @onclick="DeleteSelectedPermanently" disabled="@(!selectedEmails.Any())">
+                <button class="btn btn-outline-danger btn-sm me-2" @onclick="DeleteSelectedPermanently"
+                        disabled="@(!selectedEmails.Any())">
                     <i class="fas fa-times"></i>
                     Delete Forever (@selectedEmails.Count)
                 </button>
@@ -82,7 +84,8 @@
                                    @onclick:stopPropagation="true">
                         </div>
 
-                        <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email.Id)" @onclick:stopPropagation="true">
+                        <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email.Id)"
+                             @onclick:stopPropagation="true">
                             <div class="email-header d-flex justify-content-between align-items-start">
                                 <div class="email-sender">
                                     @if (email.Folder == "SENT")
@@ -125,10 +128,12 @@
                         </div>
 
                         <div class="email-actions">
-                            <button class="btn btn-sm btn-outline-success" @onclick="() => RestoreEmail(email.Id)" @onclick:stopPropagation="true" title="Restore">
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => RestoreEmail(email.Id)"
+                                    @onclick:stopPropagation="true" title="Restore">
                                 <i class="fas fa-undo"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletePermanently(email.Id)" @onclick:stopPropagation="true" title="Delete Forever">
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletePermanently(email.Id)"
+                                    @onclick:stopPropagation="true" title="Delete Forever">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -168,12 +173,14 @@
                 <div class="modal-body">
                     <p>Are you sure you want to permanently delete all emails in trash?</p>
                     <p class="text-warning">
-                        <strong>This action cannot be undone.</strong> All @emails.Count emails will be permanently removed.
+                        <strong>This action cannot be undone.</strong> All @emails.Count emails will be permanently
+                        removed.
                     </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="HideEmptyTrashModal">Cancel</button>
-                    <button type="button" class="btn btn-danger" @onclick="ConfirmEmptyTrash" disabled="@isEmptyingTrash">
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmEmptyTrash"
+                            disabled="@isEmptyingTrash">
                         @if (isEmptyingTrash)
                         {
                             <span class="spinner-border spinner-border-sm me-2"></span>
@@ -559,7 +566,6 @@
     }
 
 
-
     private void ShowToast(string title, string message)
     {
         toastTitle = title;
@@ -573,4 +579,5 @@
             InvokeAsync(StateHasChanged);
         });
     }
+
 }

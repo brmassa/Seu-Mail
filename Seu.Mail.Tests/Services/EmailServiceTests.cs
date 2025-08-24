@@ -18,7 +18,7 @@ public class EmailServiceTests : IAsyncDisposable
     public EmailServiceTests()
     {
         var options = new DbContextOptionsBuilder<EmailDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _context = new EmailDbContext(options);
@@ -231,7 +231,7 @@ public class EmailServiceTests : IAsyncDisposable
             Email = "test@example.com",
             Password = "encrypted_password",
             ImapServer = "", // Invalid host
-            ImapPort = 0   // Invalid port
+            ImapPort = 0 // Invalid port
         };
 
         // Act

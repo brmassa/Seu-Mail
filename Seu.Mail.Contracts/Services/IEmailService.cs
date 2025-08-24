@@ -166,7 +166,8 @@ public interface IEmailService
     /// <param name="targetFolder">Target folder to restore to</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if successful</returns>
-    Task<bool> RestoreEmailAsync(int emailId, string targetFolder = "INBOX", CancellationToken cancellationToken = default);
+    Task<bool> RestoreEmailAsync(int emailId, string targetFolder = "INBOX",
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Moves an email to a different folder
@@ -344,7 +345,8 @@ public interface IEmailService
     /// <param name="messageUid">The message UID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Task representing the operation</returns>
-    Task MarkAsReadOnServerAsync(EmailAccount account, string messageUid, CancellationToken cancellationToken = default);
+    Task MarkAsReadOnServerAsync(EmailAccount account, string messageUid,
+        CancellationToken cancellationToken = default);
 
     #endregion
 
@@ -385,30 +387,37 @@ public enum BulkEmailOperation
     /// Mark emails as read.
     /// </summary>
     MarkAsRead,
+
     /// <summary>
     /// Mark emails as unread.
     /// </summary>
     MarkAsUnread,
+
     /// <summary>
     /// Delete emails.
     /// </summary>
     Delete,
+
     /// <summary>
     /// Archive emails.
     /// </summary>
     Archive,
+
     /// <summary>
     /// Mark emails as spam.
     /// </summary>
     MarkAsSpam,
+
     /// <summary>
     /// Move emails to another folder.
     /// </summary>
     Move,
+
     /// <summary>
     /// Set emails as important/starred.
     /// </summary>
     SetImportant,
+
     /// <summary>
     /// Remove important/starred status from emails.
     /// </summary>
@@ -427,34 +436,42 @@ public class EmailSyncResult
     /// The status of the email synchronization.
     /// </summary>
     public EmailSyncStatus Status { get; set; }
+
     /// <summary>
     /// The start time of the synchronization.
     /// </summary>
     public DateTime StartTime { get; set; }
+
     /// <summary>
     /// The end time of the synchronization.
     /// </summary>
     public DateTime EndTime { get; set; }
+
     /// <summary>
     /// The number of new emails found during synchronization.
     /// </summary>
     public int NewEmailsCount { get; set; }
+
     /// <summary>
     /// The number of updated emails during synchronization.
     /// </summary>
     public int UpdatedEmailsCount { get; set; }
+
     /// <summary>
     /// The number of deleted emails during synchronization.
     /// </summary>
     public int DeletedEmailsCount { get; set; }
+
     /// <summary>
     /// The number of errors encountered during synchronization.
     /// </summary>
     public int ErrorsCount { get; set; }
+
     /// <summary>
     /// The error message, if any, encountered during synchronization.
     /// </summary>
     public string? ErrorMessage { get; set; }
+
     /// <summary>
     /// A dictionary of folder names and their respective email counts.
     /// </summary>

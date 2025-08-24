@@ -14,11 +14,21 @@ public class ValidationService : IValidationService
 {
     private readonly ILogger<ValidationService> _logger;
     private static readonly Regex EmailRegex = new(@"^[^\s@]+@[^\s@]+\.[^\s@]+$", RegexOptions.Compiled);
-    private static readonly Regex UrlRegex = new(@"^https?://[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})+(?:/[^\s]*)?$", RegexOptions.Compiled);
+
+    private static readonly Regex UrlRegex = new(@"^https?://[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})+(?:/[^\s]*)?$",
+        RegexOptions.Compiled);
+
     private static readonly Regex ServerRegex = new(@"^[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})+$", RegexOptions.Compiled);
-    private static readonly Regex IpAddressRegex = new(@"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", RegexOptions.Compiled);
+
+    private static readonly Regex IpAddressRegex =
+        new(@"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+            RegexOptions.Compiled);
+
     private static readonly Regex FileNameRegex = new(@"^[a-zA-Z0-9._-]+$", RegexOptions.Compiled);
-    private static readonly Regex MaliciousPatterns = new(@"(<script[^>]*>.*?</script>|javascript:|data:|vbscript:|onload=|onerror=|onclick=|onmouseover=)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex MaliciousPatterns =
+        new(@"(<script[^>]*>.*?</script>|javascript:|data:|vbscript:|onload=|onerror=|onclick=|onmouseover=)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ValidationService"/> class.
@@ -36,21 +46,13 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateEmail(string email)
     {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return new InputValidationResult(false, "Email address is required");
-        }
+        if (string.IsNullOrWhiteSpace(email)) return new InputValidationResult(false, "Email address is required");
 
         if (email.Length > 254)
-        {
             return new InputValidationResult(false, "Email address is too long (maximum 254 characters)");
-        }
 
         // Use a more permissive regex that allows unicode and double dots in domain
-        if (!EmailRegex.IsMatch(email))
-        {
-            return new InputValidationResult(false, "Invalid email address format");
-        }
+        if (!EmailRegex.IsMatch(email)) return new InputValidationResult(false, "Invalid email address format");
 
         try
         {
@@ -71,20 +73,11 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidatePassword(string password)
     {
-        if (string.IsNullOrEmpty(password))
-        {
-            return new InputValidationResult(false, "Password is required");
-        }
+        if (string.IsNullOrEmpty(password)) return new InputValidationResult(false, "Password is required");
 
-        if (password.Length < 1)
-        {
-            return new InputValidationResult(false, "Password must be at least 1 character long");
-        }
+        if (password.Length < 1) return new InputValidationResult(false, "Password must be at least 1 character long");
 
-        if (password.Length > 128)
-        {
-            return new InputValidationResult(false, "Password is too long");
-        }
+        if (password.Length > 128) return new InputValidationResult(false, "Password is too long");
 
         return new InputValidationResult(true);
     }
@@ -96,35 +89,22 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateUrl(string url)
     {
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return new InputValidationResult(false, "URL is required");
-        }
+        if (string.IsNullOrWhiteSpace(url)) return new InputValidationResult(false, "URL is required");
 
-        if (url.Length > 2048)
-        {
-            return new InputValidationResult(false, "URL is too long (maximum 2048 characters)");
-        }
+        if (url.Length > 2048) return new InputValidationResult(false, "URL is too long (maximum 2048 characters)");
 
-        if (!UrlRegex.IsMatch(url))
-        {
-            return new InputValidationResult(false, "Invalid URL format");
-        }
+        if (!UrlRegex.IsMatch(url)) return new InputValidationResult(false, "Invalid URL format");
 
         try
         {
             var uri = new Uri(url);
             if (uri.Scheme != "http" && uri.Scheme != "https")
-            {
                 return new InputValidationResult(false, "URL must use HTTP or HTTPS protocol");
-            }
 
             // Check for suspicious domains
             var suspiciousDomains = new[] { "localhost", "127.0.0.1", "0.0.0.0", "::1" };
             if (suspiciousDomains.Contains(uri.Host.ToLower()))
-            {
                 return new InputValidationResult(false, "Local URLs are not allowed");
-            }
         }
         catch (UriFormatException)
         {
@@ -141,36 +121,29 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateFileName(string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return new InputValidationResult(false, "File name is required");
-        }
+        if (string.IsNullOrWhiteSpace(fileName)) return new InputValidationResult(false, "File name is required");
 
         if (fileName.Length > 255)
-        {
             return new InputValidationResult(false, "File name is too long (maximum 255 characters)");
-        }
 
         // Check for directory traversal attempts
         if (fileName.Contains("..") || fileName.Contains("/") || fileName.Contains("\\"))
-        {
             return new InputValidationResult(false, "File name contains invalid characters");
-        }
 
         // Check for reserved Windows file names
-        var reservedNames = new[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
+        var reservedNames = new[]
+        {
+            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1",
+            "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        };
         var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName).ToUpper();
         if (reservedNames.Contains(nameWithoutExtension))
-        {
             return new InputValidationResult(false, "File name uses a reserved system name");
-        }
 
         // Check for invalid characters
         var invalidChars = Path.GetInvalidFileNameChars();
         if (fileName.Any(invalidChars.Contains))
-        {
             return new InputValidationResult(false, "File name contains invalid characters");
-        }
 
         return new InputValidationResult(true);
     }
@@ -182,21 +155,14 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateHtmlContent(string htmlContent)
     {
-        if (string.IsNullOrEmpty(htmlContent))
-        {
-            return new InputValidationResult(true); // Empty content is valid
-        }
+        if (string.IsNullOrEmpty(htmlContent)) return new InputValidationResult(true); // Empty content is valid
 
         if (htmlContent.Length > 1048576) // 1MB limit
-        {
             return new InputValidationResult(false, "HTML content is too large (maximum 1MB)");
-        }
 
         // Check for malicious patterns
         if (ContainsMaliciousPatterns(htmlContent))
-        {
             return new InputValidationResult(false, "HTML content contains potentially malicious code");
-        }
 
         return new InputValidationResult(true);
     }
@@ -209,33 +175,21 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateServerSettings(string server, int port)
     {
-        if (string.IsNullOrWhiteSpace(server))
-        {
-            return new InputValidationResult(false, "Server address is required");
-        }
+        if (string.IsNullOrWhiteSpace(server)) return new InputValidationResult(false, "Server address is required");
 
         if (server.Length > 253)
-        {
             return new InputValidationResult(false, "Server address is too long (maximum 253 characters)");
-        }
 
         // Allow both domain names and IP addresses
         if (!ServerRegex.IsMatch(server) && !IpAddressRegex.IsMatch(server))
-        {
             return new InputValidationResult(false, "Invalid server address format");
-        }
 
-        if (port < 1 || port > 65535)
-        {
-            return new InputValidationResult(false, "Port must be between 1 and 65535");
-        }
+        if (port < 1 || port > 65535) return new InputValidationResult(false, "Port must be between 1 and 65535");
 
         // Check for suspicious ports
         var commonMaliciousPorts = new[] { 135, 139, 445, 593, 1433, 1521, 3306, 3389, 5432, 6379, 27017 };
         if (commonMaliciousPorts.Contains(port))
-        {
             _logger.LogWarning("Potentially suspicious port {Port} used for server {Server}", port, server);
-        }
 
         return new InputValidationResult(true);
     }
@@ -247,62 +201,38 @@ public class ValidationService : IValidationService
     /// <returns>Validation result.</returns>
     public InputValidationResult ValidateAccountData(EmailAccount account)
     {
-        if (account == null)
-        {
-            return new InputValidationResult(false, "Account cannot be null");
-        }
+        if (account == null) return new InputValidationResult(false, "Account cannot be null");
 
         var errors = new List<string>();
 
         // Validate email
         var emailResult = ValidateEmail(account.Email);
-        if (!emailResult.IsValid)
-        {
-            errors.Add($"Email: {emailResult.ErrorMessage}");
-        }
+        if (!emailResult.IsValid) errors.Add($"Email: {emailResult.ErrorMessage}");
 
         // Validate password
         if (!string.IsNullOrWhiteSpace(account.Password))
         {
             var passwordResult = ValidatePassword(account.Password);
-            if (!passwordResult.IsValid)
-            {
-                errors.Add($"Password: {passwordResult.ErrorMessage}");
-            }
+            if (!passwordResult.IsValid) errors.Add($"Password: {passwordResult.ErrorMessage}");
         }
 
         // Validate display name
         if (!string.IsNullOrWhiteSpace(account.DisplayName))
         {
-            if (account.DisplayName.Length > 256)
-            {
-                errors.Add("Display name is too long (maximum 256 characters)");
-            }
+            if (account.DisplayName.Length > 256) errors.Add("Display name is too long (maximum 256 characters)");
 
-            if (ContainsMaliciousPatterns(account.DisplayName))
-            {
-                errors.Add("Display name contains invalid characters");
-            }
+            if (ContainsMaliciousPatterns(account.DisplayName)) errors.Add("Display name contains invalid characters");
         }
 
         // Validate SMTP server
         var smtpResult = ValidateServerSettings(account.SmtpServer, account.SmtpPort);
-        if (!smtpResult.IsValid)
-        {
-            errors.Add($"SMTP Server: {smtpResult.ErrorMessage}");
-        }
+        if (!smtpResult.IsValid) errors.Add($"SMTP Server: {smtpResult.ErrorMessage}");
 
         // Validate IMAP server
         var imapResult = ValidateServerSettings(account.ImapServer, account.ImapPort);
-        if (!imapResult.IsValid)
-        {
-            errors.Add($"IMAP Server: {imapResult.ErrorMessage}");
-        }
+        if (!imapResult.IsValid) errors.Add($"IMAP Server: {imapResult.ErrorMessage}");
 
-        if (errors.Any())
-        {
-            return new InputValidationResult(false, string.Join("; ", errors));
-        }
+        if (errors.Any()) return new InputValidationResult(false, string.Join("; ", errors));
 
         return new InputValidationResult(true);
     }
@@ -322,10 +252,10 @@ public class ValidationService : IValidationService
 
         // Remove or escape potentially dangerous characters
         input = input.Replace("<", "&lt;")
-                    .Replace(">", "&gt;")
-                    .Replace("\"", "&quot;")
-                    .Replace("'", "&#x27;")
-                    .Replace("&", "&amp;");
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&#x27;")
+            .Replace("&", "&amp;");
 
         // Trim and normalize whitespace
         input = Regex.Replace(input.Trim(), @"\s+", " ");
@@ -351,10 +281,7 @@ public class ValidationService : IValidationService
         sanitized = new string(sanitized.Where(ch => !invalidChars.Contains(ch)).ToArray());
 
         // Ensure it's not empty after sanitization
-        if (string.IsNullOrWhiteSpace(sanitized))
-        {
-            sanitized = "untitled";
-        }
+        if (string.IsNullOrWhiteSpace(sanitized)) sanitized = "untitled";
 
         // Truncate if too long
         if (sanitized.Length > 255)

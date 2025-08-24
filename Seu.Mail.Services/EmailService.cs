@@ -67,7 +67,8 @@ public class EmailService : IEmailService
     /// <param name="offset">Number of emails to skip for pagination.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of email messages.</returns>
-    public async Task<List<EmailMessage>> GetEmailsAsync(EmailAccount account, string folderName, int count = 50, int offset = 0, CancellationToken cancellationToken = default)
+    public async Task<List<EmailMessage>> GetEmailsAsync(EmailAccount account, string folderName, int count = 50,
+        int offset = 0, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -123,13 +124,15 @@ public class EmailService : IEmailService
     /// <param name="uid">The server UID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The email message if found; otherwise, null.</returns>
-    public async Task<EmailMessage?> GetEmailByUidAsync(EmailAccount account, string folder, uint uid, CancellationToken cancellationToken = default)
+    public async Task<EmailMessage?> GetEmailByUidAsync(EmailAccount account, string folder, uint uid,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             return await _context.EmailMessages
                 .Include(e => e.Attachments)
-                .FirstOrDefaultAsync(e => e.AccountId == account.Id && e.Folder == folder && e.Uid == uid, cancellationToken);
+                .FirstOrDefaultAsync(e => e.AccountId == account.Id && e.Folder == folder && e.Uid == uid,
+                    cancellationToken);
         }
         catch (Exception ex)
         {
@@ -145,7 +148,8 @@ public class EmailService : IEmailService
     /// <param name="folder">The folder name (default: INBOX).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of emails in the folder.</returns>
-    public async Task<int> GetEmailCountAsync(EmailAccount account, string folder = "INBOX", CancellationToken cancellationToken = default)
+    public async Task<int> GetEmailCountAsync(EmailAccount account, string folder = "INBOX",
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -174,7 +178,9 @@ public class EmailService : IEmailService
     /// <param name="priority">The email priority level.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if sent successfully.</returns>
-    public async Task<bool> SendEmailAsync(EmailAccount account, string to, string subject, string body, bool isHtml = false, string? cc = null, string? bcc = null, List<EmailAttachment>? attachments = null, EmailPriority priority = EmailPriority.Normal, CancellationToken cancellationToken = default)
+    public async Task<bool> SendEmailAsync(EmailAccount account, string to, string subject, string body,
+        bool isHtml = false, string? cc = null, string? bcc = null, List<EmailAttachment>? attachments = null,
+        EmailPriority priority = EmailPriority.Normal, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -184,35 +190,24 @@ public class EmailService : IEmailService
             message.Subject = subject;
 
             if (!string.IsNullOrEmpty(cc))
-            {
                 foreach (var ccEmail in cc.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                {
                     message.Cc.Add(MailboxAddress.Parse(ccEmail.Trim()));
-                }
-            }
 
             if (!string.IsNullOrEmpty(bcc))
-            {
                 foreach (var bccEmail in bcc.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                {
                     message.Bcc.Add(MailboxAddress.Parse(bccEmail.Trim()));
-                }
-            }
 
             var bodyBuilder = new BodyBuilder();
             if (isHtml)
-            {
                 bodyBuilder.HtmlBody = body;
-            }
             else
-            {
                 bodyBuilder.TextBody = body;
-            }
 
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            await client.ConnectAsync(account.SmtpServer, account.SmtpPort, SecureSocketOptions.SslOnConnect, cancellationToken);
+            await client.ConnectAsync(account.SmtpServer, account.SmtpPort, SecureSocketOptions.SslOnConnect,
+                cancellationToken);
 
             _logger.LogWarning("SMTP: Encrypted password length: {Length}", account.Password?.Length ?? 0);
             var decryptedPassword = _encryptionService.DecryptString(account.EncryptedPassword);
@@ -222,7 +217,8 @@ public class EmailService : IEmailService
             await client.SendAsync(message, cancellationToken);
             await client.DisconnectAsync(true, cancellationToken);
 
-            EmailSent?.Invoke(this, new EmailSentEventArgs(new EmailMessage { Subject = subject, ToAddress = to }, account));
+            EmailSent?.Invoke(this,
+                new EmailSentEventArgs(new EmailMessage { Subject = subject, ToAddress = to }, account));
             return true;
         }
         catch (Exception ex)
@@ -240,10 +236,11 @@ public class EmailService : IEmailService
     /// <param name="email">The email message object containing all email details.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if sent successfully.</returns>
-    public async Task<bool> SendEmailAsync(EmailAccount account, EmailMessage email, CancellationToken cancellationToken = default)
+    public async Task<bool> SendEmailAsync(EmailAccount account, EmailMessage email,
+        CancellationToken cancellationToken = default)
     {
         return await SendEmailAsync(account, email.ToAddress, email.Subject, email.Body ?? "", email.IsHtml,
-        email.CcAddress, email.BccAddress, email.Attachments?.ToList(), EmailPriority.Normal, cancellationToken);
+            email.CcAddress, email.BccAddress, email.Attachments?.ToList(), EmailPriority.Normal, cancellationToken);
     }
 
     /// <summary>
@@ -253,7 +250,8 @@ public class EmailService : IEmailService
     /// <param name="email">The email message to save as draft.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the saved draft email.</returns>
-    public async Task<EmailMessage> SaveDraftAsync(EmailAccount account, EmailMessage email, CancellationToken cancellationToken = default)
+    public async Task<EmailMessage> SaveDraftAsync(EmailAccount account, EmailMessage email,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -290,6 +288,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -316,6 +315,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -332,7 +332,8 @@ public class EmailService : IEmailService
     /// <param name="isImportant">Whether to mark the email as important.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if successful.</returns>
-    public async Task<bool> SetImportantAsync(int emailId, bool isImportant, CancellationToken cancellationToken = default)
+    public async Task<bool> SetImportantAsync(int emailId, bool isImportant,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -343,6 +344,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -370,6 +372,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -396,6 +399,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -412,7 +416,8 @@ public class EmailService : IEmailService
     /// <param name="targetFolder">The target folder to restore the email to (default: INBOX).</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if successful.</returns>
-    public async Task<bool> RestoreEmailAsync(int emailId, string targetFolder = "INBOX", CancellationToken cancellationToken = default)
+    public async Task<bool> RestoreEmailAsync(int emailId, string targetFolder = "INBOX",
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -424,6 +429,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -440,7 +446,8 @@ public class EmailService : IEmailService
     /// <param name="targetFolder">The target folder to move the email to.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if successful.</returns>
-    public async Task<bool> MoveEmailAsync(int emailId, string targetFolder, CancellationToken cancellationToken = default)
+    public async Task<bool> MoveEmailAsync(int emailId, string targetFolder,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -451,6 +458,7 @@ public class EmailService : IEmailService
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -491,12 +499,12 @@ public class EmailService : IEmailService
     /// <param name="targetFolder">Target folder for move operations (optional).</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the number of successfully processed emails.</returns>
-    public async Task<int> BulkOperationAsync(List<int> emailIds, BulkEmailOperation operation, string? targetFolder = null, CancellationToken cancellationToken = default)
+    public async Task<int> BulkOperationAsync(List<int> emailIds, BulkEmailOperation operation,
+        string? targetFolder = null, CancellationToken cancellationToken = default)
     {
         try
         {
             foreach (var emailId in emailIds)
-            {
                 switch (operation)
                 {
                     case BulkEmailOperation.MarkAsRead:
@@ -525,7 +533,7 @@ public class EmailService : IEmailService
                         await SetImportantAsync(emailId, false, cancellationToken);
                         break;
                 }
-            }
+
             return emailIds.Count;
         }
         catch (Exception ex)
@@ -543,7 +551,8 @@ public class EmailService : IEmailService
     /// <param name="folder">Specific folder to synchronize (null for all folders).</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the sync operation results.</returns>
-    public async Task<EmailSyncResult> SyncEmailsAsync(EmailAccount account, string? folder = null, CancellationToken cancellationToken = default)
+    public async Task<EmailSyncResult> SyncEmailsAsync(EmailAccount account, string? folder = null,
+        CancellationToken cancellationToken = default)
     {
         if (account == null)
         {
@@ -582,8 +591,7 @@ public class EmailService : IEmailService
             var maxRetries = 2;
             Exception? lastException = null;
 
-            for (int attempt = 1; attempt <= maxRetries; attempt++)
-            {
+            for (var attempt = 1; attempt <= maxRetries; attempt++)
                 try
                 {
                     _logger.LogDebug("Connection attempt {Attempt}/{MaxRetries} for {Email}",
@@ -611,17 +619,15 @@ public class EmailService : IEmailService
                     client = new ImapClient();
                     client.Timeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
                 }
-            }
 
             if (!client.IsConnected)
-            {
                 throw lastException ?? new InvalidOperationException("Failed to connect after all retry attempts");
-            }
 
             _logger.LogWarning("Authenticating account {Email}", account.EmailAddress);
             _logger.LogWarning("Encrypted password length: {Length}, starts with: {Start}",
                 account.EncryptedPassword?.Length ?? 0,
-                account.EncryptedPassword?.Substring(0, Math.Min(10, account.EncryptedPassword?.Length ?? 0)) ?? "null");
+                account.EncryptedPassword?.Substring(0, Math.Min(10, account.EncryptedPassword?.Length ?? 0)) ??
+                "null");
 
             var decryptedPassword = _encryptionService.DecryptString(account.EncryptedPassword ?? string.Empty);
             _logger.LogWarning("Decrypted password length: {Length}, starts with: {Start}",
@@ -640,7 +646,8 @@ public class EmailService : IEmailService
             var count = Math.Min(mailFolder.Count, 50);
             var newEmails = 0;
 
-            _logger.LogInformation("Folder {Folder} has {TotalCount} messages, fetching last {FetchCount} for account {Email}",
+            _logger.LogInformation(
+                "Folder {Folder} has {TotalCount} messages, fetching last {FetchCount} for account {Email}",
                 folderName, mailFolder.Count, count, account.EmailAddress);
 
             if (count > 0)
@@ -653,14 +660,14 @@ public class EmailService : IEmailService
                     messages.Count(), account.EmailAddress);
 
                 foreach (var message in messages)
-                {
                     try
                     {
                         var messageId = message.Envelope?.MessageId ?? $"uid-{message.UniqueId}";
 
                         // Check if this message already exists
                         var existingEmail = await _context.EmailMessages
-                            .FirstOrDefaultAsync(e => e.MessageId == messageId && e.AccountId == account.Id, cancellationToken);
+                            .FirstOrDefaultAsync(e => e.MessageId == messageId && e.AccountId == account.Id,
+                                cancellationToken);
 
                         if (existingEmail == null)
                         {
@@ -701,7 +708,6 @@ public class EmailService : IEmailService
                             message.Envelope?.MessageId ?? "unknown", account.EmailAddress);
                         continue;
                     }
-                }
 
                 if (newEmails > 0)
                 {
@@ -723,7 +729,8 @@ public class EmailService : IEmailService
                 }
                 else
                 {
-                    _logger.LogInformation("No new emails found for account {Email} - all {MessageCount} messages already exist",
+                    _logger.LogInformation(
+                        "No new emails found for account {Email} - all {MessageCount} messages already exist",
                         account.EmailAddress, messages.Count());
                 }
 
@@ -742,7 +749,8 @@ public class EmailService : IEmailService
             result.NewEmailsCount = newEmails;
             result.EndTime = DateTime.UtcNow;
 
-            SyncStatusChanged?.Invoke(this, new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Success, "Sync completed successfully"));
+            SyncStatusChanged?.Invoke(this,
+                new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Success, "Sync completed successfully"));
             return result;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -760,7 +768,8 @@ public class EmailService : IEmailService
             result.ErrorMessage = "Connection timed out - server may be slow or unreachable";
             result.EndTime = DateTime.UtcNow;
 
-            SyncStatusChanged?.Invoke(this, new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, "Connection timed out"));
+            SyncStatusChanged?.Invoke(this,
+                new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, "Connection timed out"));
             return result;
         }
         catch (TimeoutException ex)
@@ -770,17 +779,21 @@ public class EmailService : IEmailService
             result.ErrorMessage = "Connection timed out";
             result.EndTime = DateTime.UtcNow;
 
-            SyncStatusChanged?.Invoke(this, new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, "Connection timed out"));
+            SyncStatusChanged?.Invoke(this,
+                new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, "Connection timed out"));
             return result;
         }
-        catch (MailKit.Security.AuthenticationException ex)
+        catch (AuthenticationException ex)
         {
-            _logger.LogWarning("Authentication failed for account {Email}: {Message}", account.EmailAddress, ex.Message);
+            _logger.LogWarning("Authentication failed for account {Email}: {Message}", account.EmailAddress,
+                ex.Message);
             result.Status = EmailSyncStatus.Failed;
             result.ErrorMessage = $"Authentication failed: {ex.Message}";
             result.EndTime = DateTime.UtcNow;
 
-            SyncStatusChanged?.Invoke(this, new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, "Authentication failed - please check credentials"));
+            SyncStatusChanged?.Invoke(this,
+                new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed,
+                    "Authentication failed - please check credentials"));
             return result;
         }
         catch (Exception ex)
@@ -790,7 +803,8 @@ public class EmailService : IEmailService
             result.ErrorMessage = ex.Message;
             result.EndTime = DateTime.UtcNow;
 
-            SyncStatusChanged?.Invoke(this, new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, ex.Message));
+            SyncStatusChanged?.Invoke(this,
+                new SyncStatusChangedEventArgs(account.Id, EmailSyncStatus.Failed, ex.Message));
             ErrorOccurred?.Invoke(this, new EmailErrorEventArgs(ex.Message, ex, account.Id));
             return result;
         }
@@ -798,7 +812,6 @@ public class EmailService : IEmailService
         {
             // Ensure client is properly disposed
             if (client?.IsConnected == true)
-            {
                 try
                 {
                     await client.DisconnectAsync(true);
@@ -807,7 +820,7 @@ public class EmailService : IEmailService
                 {
                     _logger.LogDebug(ex, "Error disconnecting IMAP client for account {Email}", account.EmailAddress);
                 }
-            }
+
             client?.Dispose();
         }
     }
@@ -818,7 +831,8 @@ public class EmailService : IEmailService
     /// <param name="accountId">The database ID of the email account.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the last sync status or null if not found.</returns>
-    public async Task<EmailSyncResult?> GetLastSyncStatusAsync(int accountId, CancellationToken cancellationToken = default)
+    public async Task<EmailSyncResult?> GetLastSyncStatusAsync(int accountId,
+        CancellationToken cancellationToken = default)
     {
         // Stub implementation - would need to store sync results
         await Task.CompletedTask;
@@ -837,7 +851,8 @@ public class EmailService : IEmailService
     /// <param name="folder">The folder to monitor for new emails (default: INBOX).</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task StartIdleSyncAsync(EmailAccount account, string folder = "INBOX", CancellationToken cancellationToken = default)
+    public async Task StartIdleSyncAsync(EmailAccount account, string folder = "INBOX",
+        CancellationToken cancellationToken = default)
     {
         // Stub implementation - would need to implement IDLE monitoring
         await Task.CompletedTask;
@@ -864,7 +879,8 @@ public class EmailService : IEmailService
     /// <param name="criteria">The search criteria containing filters and parameters.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains matching emails.</returns>
-    public async Task<List<EmailMessage>> SearchEmailsAsync(EmailSearchCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<List<EmailMessage>> SearchEmailsAsync(EmailSearchCriteria criteria,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -924,7 +940,8 @@ public class EmailService : IEmailService
     /// <param name="maxResults">Maximum number of results to return.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains matching emails.</returns>
-    public async Task<List<EmailMessage>> SearchEmailsAsync(string query, int? accountId = null, string? folder = null, int maxResults = 50, CancellationToken cancellationToken = default)
+    public async Task<List<EmailMessage>> SearchEmailsAsync(string query, int? accountId = null, string? folder = null,
+        int maxResults = 50, CancellationToken cancellationToken = default)
     {
         var criteria = new EmailSearchCriteria
         {
@@ -943,7 +960,8 @@ public class EmailService : IEmailService
     /// <param name="attachmentId">The database ID of the attachment to download.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the attachment data or null if not found.</returns>
-    public async Task<EmailAttachment?> DownloadAttachmentAsync(int attachmentId, CancellationToken cancellationToken = default)
+    public async Task<EmailAttachment?> DownloadAttachmentAsync(int attachmentId,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -964,7 +982,8 @@ public class EmailService : IEmailService
     /// <param name="filePath">The file path where the attachment should be saved.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains true if saved successfully.</returns>
-    public async Task<bool> SaveAttachmentAsync(int attachmentId, string filePath, CancellationToken cancellationToken = default)
+    public async Task<bool> SaveAttachmentAsync(int attachmentId, string filePath,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -974,6 +993,7 @@ public class EmailService : IEmailService
                 await File.WriteAllBytesAsync(filePath, attachment.Data, cancellationToken);
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -989,7 +1009,8 @@ public class EmailService : IEmailService
     /// <param name="emailId">The database ID of the email.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the list of attachments.</returns>
-    public async Task<List<EmailAttachment>> GetAttachmentsAsync(int emailId, CancellationToken cancellationToken = default)
+    public async Task<List<EmailAttachment>> GetAttachmentsAsync(int emailId,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -1010,7 +1031,8 @@ public class EmailService : IEmailService
     /// <param name="account">The email account to test connection for.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains connection test results.</returns>
-    public async Task<ConnectionTestResult> TestConnectionAsync(EmailAccount account, CancellationToken cancellationToken = default)
+    public async Task<ConnectionTestResult> TestConnectionAsync(EmailAccount account,
+        CancellationToken cancellationToken = default)
     {
         if (account == null)
         {
@@ -1039,8 +1061,7 @@ public class EmailService : IEmailService
                 var maxRetries = 2;
                 Exception? lastImapException = null;
 
-                for (int attempt = 1; attempt <= maxRetries; attempt++)
-                {
+                for (var attempt = 1; attempt <= maxRetries; attempt++)
                     try
                     {
                         using var imapClient = new ImapClient();
@@ -1049,7 +1070,8 @@ public class EmailService : IEmailService
                         _logger.LogDebug("IMAP test attempt {Attempt}/{MaxRetries} for {Email}",
                             attempt, maxRetries, account.EmailAddress);
 
-                        await imapClient.ConnectAsync(account.ImapServer, account.ImapPort, account.ImapUseSsl, timeoutCts.Token);
+                        await imapClient.ConnectAsync(account.ImapServer, account.ImapPort, account.ImapUseSsl,
+                            timeoutCts.Token);
                         await imapClient.AuthenticateAsync(account.EmailAddress, password, timeoutCts.Token);
                         await imapClient.DisconnectAsync(true, timeoutCts.Token);
                         result.ImapSuccess = true;
@@ -1063,16 +1085,13 @@ public class EmailService : IEmailService
                             attempt, account.EmailAddress, ex.Message);
                         await Task.Delay(1000, timeoutCts.Token); // 1 second delay
                     }
-                }
 
-                if (!result.ImapSuccess && lastImapException != null)
-                {
-                    throw lastImapException;
-                }
+                if (!result.ImapSuccess && lastImapException != null) throw lastImapException;
             }
-            catch (MailKit.Security.AuthenticationException ex)
+            catch (AuthenticationException ex)
             {
-                _logger.LogWarning("IMAP authentication failed for {Email}: {Message}", account.EmailAddress, ex.Message);
+                _logger.LogWarning("IMAP authentication failed for {Email}: {Message}", account.EmailAddress,
+                    ex.Message);
                 result.ImapError = $"IMAP Authentication failed: {ex.Message}";
                 result.ImapSuccess = false;
             }
@@ -1090,8 +1109,7 @@ public class EmailService : IEmailService
                 var maxRetries = 2;
                 Exception? lastSmtpException = null;
 
-                for (int attempt = 1; attempt <= maxRetries; attempt++)
-                {
+                for (var attempt = 1; attempt <= maxRetries; attempt++)
                     try
                     {
                         using var smtpClient = new SmtpClient();
@@ -1101,10 +1119,11 @@ public class EmailService : IEmailService
                             attempt, maxRetries, account.EmailAddress);
 
                         var smtpSslOptions = account.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect :
-                                           account.SmtpPort == 25 ? SecureSocketOptions.None :
-                                           SecureSocketOptions.StartTls;
+                            account.SmtpPort == 25 ? SecureSocketOptions.None :
+                            SecureSocketOptions.StartTls;
 
-                        await smtpClient.ConnectAsync(account.SmtpServer, account.SmtpPort, smtpSslOptions, timeoutCts.Token);
+                        await smtpClient.ConnectAsync(account.SmtpServer, account.SmtpPort, smtpSslOptions,
+                            timeoutCts.Token);
                         await smtpClient.AuthenticateAsync(account.EmailAddress, password, timeoutCts.Token);
                         await smtpClient.DisconnectAsync(true, timeoutCts.Token);
                         result.SmtpSuccess = true;
@@ -1118,16 +1137,13 @@ public class EmailService : IEmailService
                             attempt, account.EmailAddress, ex.Message);
                         await Task.Delay(1000, timeoutCts.Token); // 1 second delay
                     }
-                }
 
-                if (!result.SmtpSuccess && lastSmtpException != null)
-                {
-                    throw lastSmtpException;
-                }
+                if (!result.SmtpSuccess && lastSmtpException != null) throw lastSmtpException;
             }
-            catch (MailKit.Security.AuthenticationException ex)
+            catch (AuthenticationException ex)
             {
-                _logger.LogWarning("SMTP authentication failed for {Email}: {Message}", account.EmailAddress, ex.Message);
+                _logger.LogWarning("SMTP authentication failed for {Email}: {Message}", account.EmailAddress,
+                    ex.Message);
                 result.SmtpError = $"SMTP Authentication failed: {ex.Message}";
                 result.SmtpSuccess = false;
             }
@@ -1141,9 +1157,7 @@ public class EmailService : IEmailService
             result.IsSuccessful = result.ImapSuccess && result.SmtpSuccess;
 
             if (!result.IsSuccessful)
-            {
                 result.GeneralError = "One or more connection tests failed. Check individual error messages.";
-            }
         }
         catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested)
         {
@@ -1180,10 +1194,12 @@ public class EmailService : IEmailService
 
             using var client = new ImapClient();
             await client.ConnectAsync(account.ImapServer, account.ImapPort, account.ImapUseSsl, cancellationToken);
-            await client.AuthenticateAsync(account.EmailAddress, _encryptionService.DecryptString(account.EncryptedPassword), cancellationToken);
+            await client.AuthenticateAsync(account.EmailAddress,
+                _encryptionService.DecryptString(account.EncryptedPassword), cancellationToken);
 
             // Get all folders from server
-            var folders = await client.GetFoldersAsync(client.PersonalNamespaces[0], cancellationToken: cancellationToken);
+            var folders =
+                await client.GetFoldersAsync(client.PersonalNamespaces[0], cancellationToken: cancellationToken);
 
             foreach (var folder in folders)
             {
@@ -1282,10 +1298,7 @@ public class EmailService : IEmailService
 
                     // Get subfolders
                     var subfolders = await folder.GetSubfoldersAsync(cancellationToken: cancellationToken);
-                    foreach (var subfolder in subfolders)
-                    {
-                        folders.Add(subfolder.FullName);
-                    }
+                    foreach (var subfolder in subfolders) folders.Add(subfolder.FullName);
                 }
             }
 
@@ -1306,7 +1319,8 @@ public class EmailService : IEmailService
     /// <param name="messageUid">The unique identifier of the message on the server.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task MarkAsReadOnServerAsync(EmailAccount account, string messageUid, CancellationToken cancellationToken = default)
+    public async Task MarkAsReadOnServerAsync(EmailAccount account, string messageUid,
+        CancellationToken cancellationToken = default)
     {
         if (account == null || string.IsNullOrEmpty(messageUid))
         {
@@ -1329,16 +1343,14 @@ public class EmailService : IEmailService
             var uid = new UniqueId(uint.Parse(messageUid));
             var uids = new[] { uid };
 
-            if (uids.Length > 0)
-            {
-                await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, cancellationToken);
-            }
+            if (uids.Length > 0) await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, cancellationToken);
 
             await client.DisconnectAsync(true, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error marking message as read on server for account {Email}, UID {Uid}", account.Email, messageUid);
+            _logger.LogError(ex, "Error marking message as read on server for account {Email}, UID {Uid}",
+                account.Email, messageUid);
         }
     }
 }

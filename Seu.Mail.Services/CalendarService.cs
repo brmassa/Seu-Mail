@@ -88,9 +88,7 @@ public class CalendarService : ICalendarService
             return;
 
         if (deleteRecurring && calendarEvent.ChildEvents.Any())
-        {
             _context.CalendarEvents.RemoveRange(calendarEvent.ChildEvents);
-        }
 
         _context.CalendarEvents.Remove(calendarEvent);
         await _context.SaveChangesAsync();
@@ -125,8 +123,8 @@ public class CalendarService : ICalendarService
             .Include(e => e.Reminders)
             .Include(e => e.Attendees)
             .Where(e => e.AccountId == accountId &&
-                       e.StartDateTime <= endDate &&
-                       e.EndDateTime >= startDate)
+                        e.StartDateTime <= endDate &&
+                        e.EndDateTime >= startDate)
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
     }
@@ -161,9 +159,9 @@ public class CalendarService : ICalendarService
             .Include(e => e.Reminders)
             .Include(e => e.Attendees)
             .Where(e => e.AccountId == accountId &&
-                       (e.Title.ToLower().Contains(lowerSearchTerm) ||
-                        (e.Description != null && e.Description.ToLower().Contains(lowerSearchTerm)) ||
-                        (e.Location != null && e.Location.ToLower().Contains(lowerSearchTerm))))
+                        (e.Title.ToLower().Contains(lowerSearchTerm) ||
+                         (e.Description != null && e.Description.ToLower().Contains(lowerSearchTerm)) ||
+                         (e.Location != null && e.Location.ToLower().Contains(lowerSearchTerm))))
             .OrderBy(e => e.StartDateTime)
             .Take(maxResults)
             .ToListAsync();
@@ -176,7 +174,8 @@ public class CalendarService : ICalendarService
     /// <param name="calendarEvent">The base calendar event with recurrence rules.</param>
     /// <param name="endDate">The end date until which to generate recurring instances.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of generated recurring event instances.</returns>
-    public async Task<List<CalendarEvent>> GenerateRecurringInstancesAsync(CalendarEvent calendarEvent, DateTime endDate)
+    public async Task<List<CalendarEvent>> GenerateRecurringInstancesAsync(CalendarEvent calendarEvent,
+        DateTime endDate)
     {
         if (calendarEvent.RecurrenceRule == null)
             return new List<CalendarEvent>();
@@ -311,9 +310,9 @@ public class CalendarService : ICalendarService
         return await _context.EventReminders
             .Include(r => r.CalendarEvent)
             .Where(r => r.CalendarEvent.AccountId == accountId &&
-                       !r.IsTriggered &&
-                       r.IsEnabled &&
-                       r.CalendarEvent.StartDateTime.AddMinutes(-r.MinutesBefore) <= now)
+                        !r.IsTriggered &&
+                        r.IsEnabled &&
+                        r.CalendarEvent.StartDateTime.AddMinutes(-r.MinutesBefore) <= now)
             .ToListAsync();
     }
 
@@ -376,7 +375,8 @@ public class CalendarService : ICalendarService
     /// <param name="responseStatus">The new response status.</param>
     /// <param name="responseNote">Optional note accompanying the response.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task UpdateAttendeeResponseAsync(int attendeeId, AttendeeResponseStatus responseStatus, string? responseNote = null)
+    public async Task UpdateAttendeeResponseAsync(int attendeeId, AttendeeResponseStatus responseStatus,
+        string? responseNote = null)
     {
         var attendee = await _context.EventAttendees.FindAsync(attendeeId);
         if (attendee != null)
@@ -431,8 +431,8 @@ public class CalendarService : ICalendarService
 
         return await _context.CalendarEvents
             .Where(e => e.AccountId == accountId &&
-                       e.StartDateTime >= startDate &&
-                       e.StartDateTime <= endDate)
+                        e.StartDateTime >= startDate &&
+                        e.StartDateTime <= endDate)
             .CountAsync();
     }
 
@@ -452,8 +452,8 @@ public class CalendarService : ICalendarService
             .Include(e => e.Reminders)
             .Include(e => e.Attendees)
             .Where(e => e.AccountId == accountId &&
-                       e.StartDateTime >= now &&
-                       e.StartDateTime <= endDate)
+                        e.StartDateTime >= now &&
+                        e.StartDateTime <= endDate)
             .OrderBy(e => e.StartDateTime)
             .Take(maxResults)
             .ToListAsync();
@@ -491,7 +491,8 @@ public class CalendarService : ICalendarService
     /// <param name="endDate">The end date of the range to export.</param>
     /// <param name="format">The export format (default: "ics").</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the exported data as a string.</returns>
-    public async Task<string> ExportEventsAsync(int accountId, DateTime startDate, DateTime endDate, string format = "ics")
+    public async Task<string> ExportEventsAsync(int accountId, DateTime startDate, DateTime endDate,
+        string format = "ics")
     {
         var events = await GetEventsAsync(accountId, startDate, endDate);
 
@@ -518,7 +519,6 @@ public class CalendarService : ICalendarService
         var totalSynced = 0;
 
         foreach (var subscription in subscriptions)
-        {
             try
             {
                 // This would typically call an external calendar sync service
@@ -584,7 +584,6 @@ public class CalendarService : ICalendarService
 
                 _context.CalendarSubscriptions.Update(failedSubscription);
             }
-        }
 
         await _context.SaveChangesAsync();
         return totalSynced;
@@ -607,10 +606,7 @@ public class CalendarService : ICalendarService
     {
         var daysOfWeek = rule.GetDaysOfWeek();
 
-        if (!daysOfWeek.Any())
-        {
-            return currentDate.AddDays(7 * rule.Interval);
-        }
+        if (!daysOfWeek.Any()) return currentDate.AddDays(7 * rule.Interval);
 
         var nextDate = currentDate.AddDays(1);
 
@@ -620,9 +616,7 @@ public class CalendarService : ICalendarService
         {
             if (daysOfWeek.Contains(nextDate.DayOfWeek) &&
                 (nextDate - currentDate).Days >= 7 * rule.Interval)
-            {
                 break;
-            }
             nextDate = nextDate.AddDays(1);
         }
 
@@ -633,10 +627,7 @@ public class CalendarService : ICalendarService
     {
         var daysOfMonth = rule.GetDaysOfMonth();
 
-        if (!daysOfMonth.Any())
-        {
-            return currentDate.AddMonths(rule.Interval);
-        }
+        if (!daysOfMonth.Any()) return currentDate.AddMonths(rule.Interval);
 
         var nextMonth = currentDate.AddMonths(rule.Interval);
         var targetDay = daysOfMonth.FirstOrDefault(d => d >= nextMonth.Day);
@@ -651,7 +642,7 @@ public class CalendarService : ICalendarService
         targetDay = Math.Min(targetDay, daysInMonth);
 
         return new DateTime(nextMonth.Year, nextMonth.Month, targetDay,
-                          currentDate.Hour, currentDate.Minute, currentDate.Second);
+            currentDate.Hour, currentDate.Minute, currentDate.Second);
     }
 
     private static string ExportToICalendar(List<CalendarEvent> events)
@@ -691,9 +682,8 @@ public class CalendarService : ICalendarService
         csv.AppendLine("Title,Description,Start,End,Location,Status,Priority");
 
         foreach (var evt in events)
-        {
-            csv.AppendLine($"\"{evt.Title}\",\"{evt.Description ?? ""}\",\"{evt.StartDateTime:yyyy-MM-dd HH:mm:ss}\",\"{evt.EndDateTime:yyyy-MM-dd HH:mm:ss}\",\"{evt.Location ?? ""}\",\"{evt.Status}\",\"{evt.Priority}\"");
-        }
+            csv.AppendLine(
+                $"\"{evt.Title}\",\"{evt.Description ?? ""}\",\"{evt.StartDateTime:yyyy-MM-dd HH:mm:ss}\",\"{evt.EndDateTime:yyyy-MM-dd HH:mm:ss}\",\"{evt.Location ?? ""}\",\"{evt.Status}\",\"{evt.Priority}\"");
 
         return csv.ToString();
     }

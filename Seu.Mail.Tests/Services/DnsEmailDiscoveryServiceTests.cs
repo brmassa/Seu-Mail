@@ -365,11 +365,8 @@ public class DnsEmailDiscoveryServiceTests : IAsyncDisposable
             await Assert.That(results).IsNotNull();
             await Assert.That(results.Length).IsEqualTo(domains.Length);
 
-            foreach (var result in results)
-            {
-                await Assert.That(result).IsNotNull();
-                // DNS resolver behavior varies, don't assert empty
-            }
+            foreach (var result in results) await Assert.That(result).IsNotNull();
+            // DNS resolver behavior varies, don't assert empty
         }
         catch (TaskCanceledException)
         {
@@ -417,10 +414,7 @@ public class DnsEmailDiscoveryServiceTests : IAsyncDisposable
         };
 
         // Setup mock to return no MX records for malicious domains
-        foreach (var domain in maliciousDomains)
-        {
-            _mockDnsHttpClient.SetupMxRecords(domain, null);
-        }
+        foreach (var domain in maliciousDomains) _mockDnsHttpClient.SetupMxRecords(domain, null);
 
         foreach (var domain in maliciousDomains)
         {
@@ -434,10 +428,8 @@ public class DnsEmailDiscoveryServiceTests : IAsyncDisposable
         // Verify no actual commands were executed (all responses were mocked)
         await Assert.That(_mockDnsHttpClient.RequestHistory.Count).IsGreaterThan(0);
         foreach (var request in _mockDnsHttpClient.RequestHistory)
-        {
             // Verify that the domain in the request is properly sanitized
             await Assert.That(request.Domain).IsNotNull();
-        }
     }
 
     [Test]

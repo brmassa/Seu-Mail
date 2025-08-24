@@ -38,8 +38,8 @@
         <div class="row">
             <div class="col-lg-8 col-md-10">
                 <EditForm Model="Settings" OnValidSubmit="SaveSettings">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary class="alert alert-danger" />
+                    <DataAnnotationsValidator/>
+                    <ValidationSummary class="alert alert-danger"/>
 
                     <!-- General Settings Card -->
                     <div class="card mb-4">
@@ -81,7 +81,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.ShowWeekNumbers" class="form-check-input" id="showWeekNumbers" />
+                                        <InputCheckbox @bind-Value="Settings.ShowWeekNumbers" class="form-check-input"
+                                                       id="showWeekNumbers"/>
                                         <label class="form-check-label" for="showWeekNumbers">
                                             Show Week Numbers
                                         </label>
@@ -89,7 +90,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.ShowWeekends" class="form-check-input" id="showWeekends" />
+                                        <InputCheckbox @bind-Value="Settings.ShowWeekends" class="form-check-input"
+                                                       id="showWeekends"/>
                                         <label class="form-check-label" for="showWeekends">
                                             Show Weekends
                                         </label>
@@ -100,7 +102,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.HighlightToday" class="form-check-input" id="highlightToday" />
+                                        <InputCheckbox @bind-Value="Settings.HighlightToday" class="form-check-input"
+                                                       id="highlightToday"/>
                                         <label class="form-check-label" for="highlightToday">
                                             Highlight Today
                                         </label>
@@ -108,7 +111,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.ShowEventTooltips" class="form-check-input" id="showTooltips" />
+                                        <InputCheckbox @bind-Value="Settings.ShowEventTooltips" class="form-check-input"
+                                                       id="showTooltips"/>
                                         <label class="form-check-label" for="showTooltips">
                                             Show Event Tooltips
                                         </label>
@@ -141,7 +145,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.Use24HourFormat" class="form-check-input" id="use24Hour" />
+                                        <InputCheckbox @bind-Value="Settings.Use24HourFormat" class="form-check-input"
+                                                       id="use24Hour"/>
                                         <label class="form-check-label" for="use24Hour">
                                             Use 24-hour Format
                                         </label>
@@ -154,7 +159,7 @@
                                     <div class="mb-3">
                                         <label class="form-label">Day View Start Hour</label>
                                         <InputSelect @bind-Value="Settings.DayViewStartHour" class="form-select">
-                                            @for (int i = 0; i < 24; i++)
+                                            @for (var i = 0; i < 24; i++)
                                             {
                                                 <option value="@i">@i.ToString("00"):00</option>
                                             }
@@ -165,7 +170,7 @@
                                     <div class="mb-3">
                                         <label class="form-label">Day View End Hour</label>
                                         <InputSelect @bind-Value="Settings.DayViewEndHour" class="form-select">
-                                            @for (int i = 1; i <= 24; i++)
+                                            @for (var i = 1; i <= 24; i++)
                                             {
                                                 <option value="@i">@i.ToString("00"):00</option>
                                             }
@@ -214,7 +219,8 @@
                                     <div class="mb-3">
                                         <label class="form-label">Default Event Color</label>
                                         <div class="input-group">
-                                            <InputText @bind-Value="Settings.DefaultEventColor" class="form-control" type="color" />
+                                            <InputText @bind-Value="Settings.DefaultEventColor" class="form-control"
+                                                       type="color"/>
                                             <span class="input-group-text">@Settings.DefaultEventColor</span>
                                         </div>
                                     </div>
@@ -239,7 +245,8 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">Max Events per Day Cell</label>
-                                        <InputNumber @bind-Value="Settings.MaxEventsPerDayCell" class="form-control" min="1" max="10" />
+                                        <InputNumber @bind-Value="Settings.MaxEventsPerDayCell" class="form-control"
+                                                     min="1" max="10"/>
                                     </div>
                                 </div>
                             </div>
@@ -247,7 +254,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.EnableReminders" class="form-check-input" id="enableReminders" />
+                                        <InputCheckbox @bind-Value="Settings.EnableReminders" class="form-check-input"
+                                                       id="enableReminders"/>
                                         <label class="form-check-label" for="enableReminders">
                                             Enable Event Reminders
                                         </label>
@@ -255,7 +263,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.ConfirmEventDeletion" class="form-check-input" id="confirmDeletion" />
+                                        <InputCheckbox @bind-Value="Settings.ConfirmEventDeletion"
+                                                       class="form-check-input" id="confirmDeletion"/>
                                         <label class="form-check-label" for="confirmDeletion">
                                             Confirm Before Deleting Events
                                         </label>
@@ -264,7 +273,8 @@
                             </div>
 
                             <div class="form-check mb-3">
-                                <InputCheckbox @bind-Value="Settings.ShowAllDayEventsAtTop" class="form-check-input" id="allDayAtTop" />
+                                <InputCheckbox @bind-Value="Settings.ShowAllDayEventsAtTop" class="form-check-input"
+                                               id="allDayAtTop"/>
                                 <label class="form-check-label" for="allDayAtTop">
                                     Show All-Day Events at Top
                                 </label>
@@ -284,7 +294,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check mb-3">
-                                        <InputCheckbox @bind-Value="Settings.AutoSyncSubscriptions" class="form-check-input" id="autoSync" />
+                                        <InputCheckbox @bind-Value="Settings.AutoSyncSubscriptions"
+                                                       class="form-check-input" id="autoSync"/>
                                         <label class="form-check-label" for="autoSync">
                                             Auto-sync Calendar Subscriptions
                                         </label>
@@ -293,7 +304,8 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">Auto-sync Interval</label>
-                                        <InputSelect @bind-Value="Settings.AutoSyncIntervalMinutes" class="form-select" disabled="@(!Settings.AutoSyncSubscriptions)">
+                                        <InputSelect @bind-Value="Settings.AutoSyncIntervalMinutes" class="form-select"
+                                                     disabled="@(!Settings.AutoSyncSubscriptions)">
                                             <option value="15">Every 15 minutes</option>
                                             <option value="30">Every 30 minutes</option>
                                             <option value="60">Every hour</option>
@@ -352,12 +364,15 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted">Working hours:</small>
-                            <div>@Settings.DayViewStartHour.ToString("00"):00 - @Settings.DayViewEndHour.ToString("00"):00</div>
+                            <div>@Settings.DayViewStartHour.ToString("00"):00
+                                - @Settings.DayViewEndHour.ToString("00"):00
+                            </div>
                         </div>
                         <div class="mb-3">
                             <small class="text-muted">Default event color:</small>
                             <div class="d-flex align-items-center">
-                                <div class="color-preview me-2" style="background-color: @Settings.DefaultEventColor; width: 20px; height: 20px; border-radius: 3px; border: 1px solid #dee2e6;"></div>
+                                <div class="color-preview me-2"
+                                     style="background-color: @Settings.DefaultEventColor; width: 20px; height: 20px; border-radius: 3px; border: 1px solid #dee2e6;"></div>
                                 @Settings.DefaultEventColor
                             </div>
                         </div>
@@ -446,36 +461,37 @@
     {
         Navigation.NavigateTo("/calendar");
     }
+
 }
 
 <style>
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.color-preview {
-    display: inline-block;
-}
-
-.position-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-}
-
-@@media (max-width: 991.98px) {
-    .position-sticky {
-        position: static;
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
     }
-}
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .color-preview {
+        display: inline-block;
+    }
+
+    .position-sticky {
+        position: -webkit-sticky;
+        position: sticky;
+    }
+
+    @@media (max-width: 991.98px) {
+        .position-sticky {
+            position: static;
+        }
+    }
 </style>

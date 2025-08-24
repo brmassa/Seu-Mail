@@ -41,7 +41,7 @@
     <div class="compose-form flex-grow-1 overflow-auto">
         <div class="p-4">
             <EditForm Model="@emailModel" OnValidSubmit="@SendEmail">
-                <DataAnnotationsValidator />
+                <DataAnnotationsValidator/>
 
                 <!-- From Account -->
                 <div class="row mb-3">
@@ -64,7 +64,7 @@
                     <div class="col-sm-10">
                         <input type="email" class="form-control" @bind="emailModel.To"
                                placeholder="recipient@example.com" multiple>
-                        <ValidationMessage For="@(() => emailModel.To)" />
+                        <ValidationMessage For="@(() => emailModel.To)"/>
                         <div class="form-text">Separate multiple recipients with semicolons</div>
                     </div>
                 </div>
@@ -122,7 +122,7 @@
                     <div class="col-sm-10">
                         <input type="text" class="form-control" @bind="emailModel.Subject"
                                placeholder="Email subject">
-                        <ValidationMessage For="@(() => emailModel.Subject)" />
+                        <ValidationMessage For="@(() => emailModel.Subject)"/>
                     </div>
                 </div>
 
@@ -141,7 +141,8 @@
                                         </div>
                                         <div class="attachment-info flex-grow-1">
                                             <div class="attachment-name small fw-bold">@attachment.FileName</div>
-                                            <div class="attachment-size text-muted small">@FormatFileSize(attachment.Size)</div>
+                                            <div
+                                                class="attachment-size text-muted small">@FormatFileSize(attachment.Size)</div>
                                         </div>
                                         <button type="button" class="btn btn-outline-danger btn-sm"
                                                 @onclick="() => RemoveAttachment(attachment)">
@@ -157,7 +158,7 @@
                 <!-- Add Attachment -->
                 <div class="row mb-3">
                     <div class="col-sm-10 offset-sm-2">
-                        <InputFile OnChange="HandleFileSelection" multiple class="form-control" accept="*/*" />
+                        <InputFile OnChange="HandleFileSelection" multiple class="form-control" accept="*/*"/>
                         <div class="form-text">Maximum file size: 25MB per file</div>
                     </div>
                 </div>
@@ -222,7 +223,7 @@
                             <textarea class="form-control" @bind="emailModel.Body" rows="15"
                                       placeholder="Type your message here..."></textarea>
                         }
-                        <ValidationMessage For="@(() => emailModel.Body)" />
+                        <ValidationMessage For="@(() => emailModel.Body)"/>
                     </div>
                 </div>
 
@@ -233,7 +234,8 @@
                         <div class="col-sm-10 offset-sm-2">
                             <div class="signature border-top pt-3 mt-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" @bind="includeSignature" id="includeSignature">
+                                    <input class="form-check-input" type="checkbox" @bind="includeSignature"
+                                           id="includeSignature">
                                     <label class="form-check-label" for="includeSignature">
                                         Include signature
                                     </label>
@@ -295,18 +297,14 @@
 
     public class ComposeEmailModel
     {
-        [Required]
-        [EmailAddress]
-        public string To { get; set; } = "";
+        [Required] [EmailAddress] public string To { get; set; } = "";
 
         public string? Cc { get; set; }
         public string? Bcc { get; set; }
 
-        [Required]
-        public string Subject { get; set; } = "";
+        [Required] public string Subject { get; set; } = "";
 
-        [Required]
-        public string Body { get; set; } = "";
+        [Required] public string Body { get; set; } = "";
     }
 
     public class EmailAttachmentModel
@@ -604,4 +602,5 @@
             InvokeAsync(StateHasChanged);
         });
     }
+
 }

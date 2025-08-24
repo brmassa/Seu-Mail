@@ -170,32 +170,50 @@ public class CalendarSettings
     /// <summary>
     /// Gets the default start time as a TimeSpan
     /// </summary>
-    public TimeSpan GetDefaultStartTimeSpan() => TimeSpan.FromMinutes(DefaultEventStartTime);
+    public TimeSpan GetDefaultStartTimeSpan()
+    {
+        return TimeSpan.FromMinutes(DefaultEventStartTime);
+    }
 
     /// <summary>
     /// Gets the default duration as a TimeSpan
     /// </summary>
-    public TimeSpan GetDefaultDurationTimeSpan() => TimeSpan.FromMinutes(DefaultEventDuration);
+    public TimeSpan GetDefaultDurationTimeSpan()
+    {
+        return TimeSpan.FromMinutes(DefaultEventDuration);
+    }
 
     /// <summary>
     /// Gets the day view start time as a TimeSpan
     /// </summary>
-    public TimeSpan GetDayViewStartTimeSpan() => TimeSpan.FromHours(DayViewStartHour);
+    public TimeSpan GetDayViewStartTimeSpan()
+    {
+        return TimeSpan.FromHours(DayViewStartHour);
+    }
 
     /// <summary>
     /// Gets the day view end time as a TimeSpan
     /// </summary>
-    public TimeSpan GetDayViewEndTimeSpan() => TimeSpan.FromHours(DayViewEndHour);
+    public TimeSpan GetDayViewEndTimeSpan()
+    {
+        return TimeSpan.FromHours(DayViewEndHour);
+    }
 
     /// <summary>
     /// Gets the time slot interval as a TimeSpan
     /// </summary>
-    public TimeSpan GetTimeSlotIntervalTimeSpan() => TimeSpan.FromMinutes(TimeSlotInterval);
+    public TimeSpan GetTimeSlotIntervalTimeSpan()
+    {
+        return TimeSpan.FromMinutes(TimeSlotInterval);
+    }
 
     /// <summary>
     /// Gets the auto-sync interval as a TimeSpan
     /// </summary>
-    public TimeSpan GetAutoSyncIntervalTimeSpan() => TimeSpan.FromMinutes(AutoSyncIntervalMinutes);
+    public TimeSpan GetAutoSyncIntervalTimeSpan()
+    {
+        return TimeSpan.FromMinutes(AutoSyncIntervalMinutes);
+    }
 }
 
 /// <summary>

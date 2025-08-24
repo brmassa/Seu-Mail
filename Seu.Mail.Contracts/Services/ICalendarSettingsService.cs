@@ -185,27 +185,36 @@ public record ValidationResult
     /// Creates a successful validation result.
     /// </summary>
     /// <returns>A successful <see cref="ValidationResult"/>.</returns>
-    public static ValidationResult Success() => new() { IsValid = true };
+    public static ValidationResult Success()
+    {
+        return new ValidationResult { IsValid = true };
+    }
 
     /// <summary>
     /// Creates a failed validation result with errors.
     /// </summary>
     /// <param name="errors">Error messages.</param>
     /// <returns>A failed <see cref="ValidationResult"/>.</returns>
-    public static ValidationResult Failure(params string[] errors) => new()
+    public static ValidationResult Failure(params string[] errors)
     {
-        IsValid = false,
-        Errors = errors.ToList()
-    };
+        return new ValidationResult
+        {
+            IsValid = false,
+            Errors = errors.ToList()
+        };
+    }
 
     /// <summary>
     /// Creates a validation result with warnings.
     /// </summary>
     /// <param name="warnings">Warning messages.</param>
     /// <returns>A <see cref="ValidationResult"/> with warnings.</returns>
-    public static ValidationResult WithWarnings(params string[] warnings) => new()
+    public static ValidationResult WithWarnings(params string[] warnings)
     {
-        IsValid = true,
-        Warnings = warnings.ToList()
-    };
+        return new ValidationResult
+        {
+            IsValid = true,
+            Warnings = warnings.ToList()
+        };
+    }
 }

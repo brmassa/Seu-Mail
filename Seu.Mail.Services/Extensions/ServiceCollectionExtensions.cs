@@ -15,7 +15,8 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection</param>
     /// <param name="configuration">Application configuration</param>
     /// <returns>The service collection for chaining</returns>
-    public static IServiceCollection AddEmailServices(this IServiceCollection services, IConfiguration? configuration = null)
+    public static IServiceCollection AddEmailServices(this IServiceCollection services,
+        IConfiguration? configuration = null)
     {
         // Core email services
         services.AddScoped<IEmailService, EmailService>();

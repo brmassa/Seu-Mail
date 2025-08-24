@@ -2,7 +2,7 @@
 
 // Download file function for import/export
 window.downloadFile = (filename, contentType, content) => {
-    const blob = new Blob([content], { type: contentType });
+    const blob = new Blob([content], {type: contentType});
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
@@ -206,12 +206,12 @@ window.formatDate = (date, format = 'YYYY-MM-DD') => {
             return d.toISOString().split('T')[0];
         case 'MM/DD/YYYY':
             return (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
-                   d.getDate().toString().padStart(2, '0') + '/' +
-                   d.getFullYear();
+                d.getDate().toString().padStart(2, '0') + '/' +
+                d.getFullYear();
         case 'DD/MM/YYYY':
             return d.getDate().toString().padStart(2, '0') + '/' +
-                   (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
-                   d.getFullYear();
+                (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                d.getFullYear();
         case 'long':
             return d.toLocaleDateString('en-US', {
                 weekday: 'long',

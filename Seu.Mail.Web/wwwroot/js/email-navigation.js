@@ -1,80 +1,80 @@
 // Email Navigation and Print Functionality
 
 window.setupEmailKeyboardNavigation = (dotNetObjectReference) => {
-  // Remove any existing event listeners
-  document.removeEventListener("keydown", window.emailKeyboardHandler);
+    // Remove any existing event listeners
+    document.removeEventListener("keydown", window.emailKeyboardHandler);
 
-  // Create new keyboard handler
-  window.emailKeyboardHandler = function (event) {
-    // Don't handle keys if user is typing in an input field
-    if (
-      event.target.tagName === "INPUT" ||
-      event.target.tagName === "TEXTAREA" ||
-      event.target.isContentEditable
-    ) {
-      return;
-    }
+    // Create new keyboard handler
+    window.emailKeyboardHandler = function (event) {
+        // Don't handle keys if user is typing in an input field
+        if (
+            event.target.tagName === "INPUT" ||
+            event.target.tagName === "TEXTAREA" ||
+            event.target.isContentEditable
+        ) {
+            return;
+        }
 
-    // Handle keyboard shortcuts
-    switch (event.key) {
-      case "j":
-      case "ArrowDown":
-        event.preventDefault();
-        dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
-        break;
-      case "k":
-      case "ArrowUp":
-        event.preventDefault();
-        dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
-        break;
-      case "ArrowLeft":
-      case "ArrowRight":
-        event.preventDefault();
-        dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
-        break;
-      case "Escape":
-        event.preventDefault();
-        dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
-        break;
-    }
-  };
+        // Handle keyboard shortcuts
+        switch (event.key) {
+            case "j":
+            case "ArrowDown":
+                event.preventDefault();
+                dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
+                break;
+            case "k":
+            case "ArrowUp":
+                event.preventDefault();
+                dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
+                break;
+            case "ArrowLeft":
+            case "ArrowRight":
+                event.preventDefault();
+                dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
+                break;
+            case "Escape":
+                event.preventDefault();
+                dotNetObjectReference.invokeMethodAsync("HandleKeyPress", event.key);
+                break;
+        }
+    };
 
-  // Add the event listener
-  document.addEventListener("keydown", window.emailKeyboardHandler);
+    // Add the event listener
+    document.addEventListener("keydown", window.emailKeyboardHandler);
 };
 
 window.printEmailContent = (subject, content, isHtml, from, to, date) => {
-  try {
-    // Check if content is empty and provide fallback
-    if (!content || content.trim() === "") {
-      content = "No content available for this email.";
-      isHtml = false;
-    }
+    try {
+        // Check if content is empty and provide fallback
+        if (!content || content.trim() === "") {
+            content = "No content available for this email.";
+            isHtml = false;
+        }
 
-    // Create a new window for printing
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=900,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no",
-    );
+        // Create a new window for printing
+        const printWindow = window.open(
+            "",
+            "_blank",
+            "width=900,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no",
+        );
 
-    if (!printWindow) {
-      // Fallback: try to print in current window if popup is blocked
-      if (
-        confirm(
-          "Print window blocked. Would you like to print in the current tab instead?",
-        )
-      ) {
-        printInCurrentWindow(subject, content, isHtml, from, to, date);
-      }
-      return;
-    }
+        if (!printWindow) {
+            // Fallback: try to print in current window if popup is blocked
+            if (
+                confirm(
+                    "Print window blocked. Would you like to print in the current tab instead?",
+                )
+            ) {
+                printInCurrentWindow(subject, content, isHtml, from, to, date);
+            }
+            return;
+        }
 
-    const emailBody = isHtml
-      ? content
-      : `<pre style="white-space: pre-wrap; font-family: inherit;">${escapeHtml(content)}</pre>`;
+        const emailBody = isHtml
+            ? content
+            : `<pre style="white-space: pre-wrap; font-family: inherit;">${escapeHtml(content)}</pre>`;
 
-    const printContent = `
+        const printContent = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -275,25 +275,25 @@ window.printEmailContent = (subject, content, isHtml, from, to, date) => {
         </html>
     `;
 
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-  } catch (error) {
-    console.error("Error creating print window:", error);
-    alert(
-      "Failed to open print window. Please try again or check your popup settings.",
-    );
-  }
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+    } catch (error) {
+        console.error("Error creating print window:", error);
+        alert(
+            "Failed to open print window. Please try again or check your popup settings.",
+        );
+    }
 };
 
 // Fallback function to print in current window
 function printInCurrentWindow(subject, content, isHtml, from, to, date) {
-  try {
-    const originalContent = document.body.innerHTML;
-    const emailBody = isHtml
-      ? content
-      : `<pre style="white-space: pre-wrap; font-family: inherit;">${escapeHtml(content)}</pre>`;
+    try {
+        const originalContent = document.body.innerHTML;
+        const emailBody = isHtml
+            ? content
+            : `<pre style="white-space: pre-wrap; font-family: inherit;">${escapeHtml(content)}</pre>`;
 
-    const printContent = `
+        const printContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px;">
         <div style="border-bottom: 3px solid #007bff; padding-bottom: 20px; margin-bottom: 30px;">
           <h1 style="font-size: 28px; margin-bottom: 15px;">${escapeHtml(subject)}</h1>
@@ -309,94 +309,94 @@ function printInCurrentWindow(subject, content, isHtml, from, to, date) {
         </div>
       </div>`;
 
-    document.body.innerHTML = printContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-  } catch (error) {
-    console.error("Error printing in current window:", error);
-    alert("Failed to print email. Please try again.");
-  }
+        document.body.innerHTML = printContent;
+        window.print();
+        document.body.innerHTML = originalContent;
+    } catch (error) {
+        console.error("Error printing in current window:", error);
+        alert("Failed to print email. Please try again.");
+    }
 }
 
 // Helper function to escape HTML for safe insertion
 function escapeHtml(text) {
-  if (!text) return "";
-  const map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
-  };
-  return text.replace(/[&<>"']/g, function (m) {
-    return map[m];
-  });
+    if (!text) return "";
+    const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, function (m) {
+        return map[m];
+    });
 }
 
 // Initialize resizable panes
 window.initializeResizablePanes = () => {
-  const container = document.querySelector(".email-split-container");
-  const emailList = document.querySelector(".email-list-section");
-  const emailView = document.querySelector(".email-view-section");
+    const container = document.querySelector(".email-split-container");
+    const emailList = document.querySelector(".email-list-section");
+    const emailView = document.querySelector(".email-view-section");
 
-  if (!container || !emailList || !emailView) return;
+    if (!container || !emailList || !emailView) return;
 
-  let isResizing = false;
-  let startX = 0;
-  let startWidthList = 0;
-  let startWidthView = 0;
+    let isResizing = false;
+    let startX = 0;
+    let startWidthList = 0;
+    let startWidthView = 0;
 
-  // Create resize handle
-  const resizeHandle = document.createElement("div");
-  resizeHandle.className = "resize-handle";
-  resizeHandle.innerHTML = '<div class="resize-handle-line"></div>';
+    // Create resize handle
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "resize-handle";
+    resizeHandle.innerHTML = '<div class="resize-handle-line"></div>';
 
-  // Insert resize handle between list and view
-  emailList.insertAdjacentElement("afterend", resizeHandle);
+    // Insert resize handle between list and view
+    emailList.insertAdjacentElement("afterend", resizeHandle);
 
-  resizeHandle.addEventListener("mousedown", (e) => {
-    isResizing = true;
-    startX = e.clientX;
-    startWidthList = parseInt(window.getComputedStyle(emailList).width, 10);
-    startWidthView = parseInt(window.getComputedStyle(emailView).width, 10);
+    resizeHandle.addEventListener("mousedown", (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startWidthList = parseInt(window.getComputedStyle(emailList).width, 10);
+        startWidthView = parseInt(window.getComputedStyle(emailView).width, 10);
 
-    document.addEventListener("mousemove", handleResize);
-    document.addEventListener("mouseup", stopResize);
-    document.body.style.cursor = "col-resize";
-    e.preventDefault();
-  });
+        document.addEventListener("mousemove", handleResize);
+        document.addEventListener("mouseup", stopResize);
+        document.body.style.cursor = "col-resize";
+        e.preventDefault();
+    });
 
-  function handleResize(e) {
-    if (!isResizing) return;
+    function handleResize(e) {
+        if (!isResizing) return;
 
-    const containerWidth = container.offsetWidth;
-    const deltaX = e.clientX - startX;
-    const newListWidth = startWidthList + deltaX;
-    const newViewWidth = startWidthView - deltaX;
+        const containerWidth = container.offsetWidth;
+        const deltaX = e.clientX - startX;
+        const newListWidth = startWidthList + deltaX;
+        const newViewWidth = startWidthView - deltaX;
 
-    // Ensure minimum widths
-    const minWidth = 250;
-    if (newListWidth >= minWidth && newViewWidth >= minWidth) {
-      const listPercent = (newListWidth / containerWidth) * 100;
-      const viewPercent = (newViewWidth / containerWidth) * 100;
+        // Ensure minimum widths
+        const minWidth = 250;
+        if (newListWidth >= minWidth && newViewWidth >= minWidth) {
+            const listPercent = (newListWidth / containerWidth) * 100;
+            const viewPercent = (newViewWidth / containerWidth) * 100;
 
-      emailList.style.width = `${listPercent}%`;
-      emailView.style.width = `${viewPercent}%`;
+            emailList.style.width = `${listPercent}%`;
+            emailView.style.width = `${viewPercent}%`;
+        }
     }
-  }
 
-  function stopResize() {
-    isResizing = false;
-    document.removeEventListener("mousemove", handleResize);
-    document.removeEventListener("mouseup", stopResize);
-    document.body.style.cursor = "default";
-  }
+    function stopResize() {
+        isResizing = false;
+        document.removeEventListener("mousemove", handleResize);
+        document.removeEventListener("mouseup", stopResize);
+        document.body.style.cursor = "default";
+    }
 };
 
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  // Small delay to ensure Blazor components are rendered
-  setTimeout(() => {
-    window.initializeResizablePanes();
-  }, 500);
+    // Small delay to ensure Blazor components are rendered
+    setTimeout(() => {
+        window.initializeResizablePanes();
+    }, 500);
 });

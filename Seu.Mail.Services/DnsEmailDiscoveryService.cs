@@ -79,10 +79,7 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
             // Try multiple DNS resolution methods
             mxRecords.AddRange(await GetMxRecordsViaDnsLookupAsync(domain));
 
-            if (!mxRecords.Any())
-            {
-                mxRecords.AddRange(await GetMxRecordsViaHttpAsync(domain));
-            }
+            if (!mxRecords.Any()) mxRecords.AddRange(await GetMxRecordsViaHttpAsync(domain));
 
             // Remove duplicates and sort by preference (implied by common patterns)
             return mxRecords
@@ -108,10 +105,10 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
         try
         {
             string? workingImapServer = null;
-            int workingImapPort = 993;
+            var workingImapPort = 993;
             string? workingSmtpServer = null;
-            int workingSmtpPort = 587;
-            bool usesSsl = true;
+            var workingSmtpPort = 587;
+            var usesSsl = true;
 
             // Generate potential server names from MX records and domain
             var potentialServers = GeneratePotentialServerNames(domain, mxRecords);
@@ -121,7 +118,6 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
             {
                 var imapPorts = new[] { 993, 143 };
                 foreach (var port in imapPorts)
-                {
                     if (await IsPortOpenAsync(server, port))
                     {
                         workingImapServer = server;
@@ -130,7 +126,7 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
                         _logger.LogInformation("Found working IMAP server: {Server}:{Port}", server, port);
                         break;
                     }
-                }
+
                 if (workingImapServer != null) break;
             }
 
@@ -139,7 +135,6 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
             {
                 var smtpPorts = new[] { 587, 465, 25 };
                 foreach (var port in smtpPorts)
-                {
                     if (await IsPortOpenAsync(server, port))
                     {
                         workingSmtpServer = server;
@@ -148,13 +143,12 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
                         _logger.LogInformation("Found working SMTP server: {Server}:{Port}", server, port);
                         break;
                     }
-                }
+
                 if (workingSmtpServer != null) break;
             }
 
             // If we found both servers, create configuration
             if (workingImapServer != null && workingSmtpServer != null)
-            {
                 return new EmailProviderSettings
                 {
                     DisplayName = $"DNS Auto-discovered ({domain})",
@@ -165,7 +159,6 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
                     UseSsl = usesSsl,
                     DomainPatterns = [domain]
                 };
-            }
 
             _logger.LogWarning("Could not find working email servers for domain: {Domain}", domain);
             return null;
@@ -202,20 +195,15 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
                 };
 
                 foreach (var pattern in commonPatterns)
-                {
                     try
                     {
                         var addresses = await Dns.GetHostAddressesAsync(pattern);
-                        if (addresses.Any())
-                        {
-                            mxRecords.Add(pattern);
-                        }
+                        if (addresses.Any()) mxRecords.Add(pattern);
                     }
                     catch
                     {
                         // Skip if DNS resolution fails
                     }
-                }
             }
         }
         catch (Exception ex)
@@ -238,26 +226,18 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             var response = await _dnsHttpClient.GetStringAsync(url, cts.Token);
 
-            if (string.IsNullOrEmpty(response))
-            {
-                return new List<string>();
-            }
+            if (string.IsNullOrEmpty(response)) return new List<string>();
 
             // Parse the JSON response (simple regex parsing)
             var mxPattern = new Regex(@"""data""\s*:\s*""[^""]*\s+([^""]+)""", RegexOptions.IgnoreCase);
             var matches = mxPattern.Matches(response);
 
             foreach (Match match in matches)
-            {
                 if (match.Groups.Count > 1)
                 {
                     var mxRecord = match.Groups[1].Value.Trim().TrimEnd('.');
-                    if (!string.IsNullOrEmpty(mxRecord))
-                    {
-                        mxRecords.Add(mxRecord);
-                    }
+                    if (!string.IsNullOrEmpty(mxRecord)) mxRecords.Add(mxRecord);
                 }
-            }
         }
         catch (Exception ex)
         {
@@ -293,7 +273,6 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
 
         // Add variations of MX records
         foreach (var mx in mxRecords)
-        {
             // Try to derive IMAP/SMTP servers from MX records
             if (mx.Contains("mx", StringComparison.OrdinalIgnoreCase))
             {
@@ -305,7 +284,6 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
                     servers.Add($"mail.{baseDomain}");
                 }
             }
-        }
 
         return servers.ToList();
     }
@@ -313,20 +291,13 @@ public class DnsEmailDiscoveryService : IDnsEmailDiscoveryService
     private static string ExtractBaseDomain(string mxRecord, string originalDomain)
     {
         // Try to extract the base domain from MX record
-        if (mxRecord.EndsWith($".{originalDomain}", StringComparison.OrdinalIgnoreCase))
-        {
-            return originalDomain;
-        }
+        if (mxRecord.EndsWith($".{originalDomain}", StringComparison.OrdinalIgnoreCase)) return originalDomain;
 
         // Simple extraction - remove common prefixes
         var prefixes = new[] { "mx", "mx1", "mx2", "mx3", "mail", "smtp" };
         foreach (var prefix in prefixes)
-        {
             if (mxRecord.StartsWith($"{prefix}.", StringComparison.OrdinalIgnoreCase))
-            {
                 return mxRecord.Substring(prefix.Length + 1);
-            }
-        }
 
         return originalDomain;
     }

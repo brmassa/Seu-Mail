@@ -22,14 +22,16 @@ public class HtmlUtilityService : IHtmlUtilityService
     }
 
     // Dangerous tags that should always be removed
-    private static readonly string[] DangerousTags = {
+    private static readonly string[] DangerousTags =
+    {
         "script", "object", "embed", "form", "input", "button", "iframe",
         "frame", "frameset", "noframes", "meta", "base", "link", "style",
         "applet", "param", "xml", "bgsound", "marquee", "layer", "ilayer"
     };
 
     // Dangerous attributes that should always be removed
-    private static readonly string[] DangerousAttributes = {
+    private static readonly string[] DangerousAttributes =
+    {
         "javascript", "vbscript", "onabort", "onactivate", "onafterprint", "onafterupdate",
         "onbeforeactivate", "onbeforecopy", "onbeforecut", "onbeforedeactivate", "onbeforeeditfocus",
         "onbeforepaste", "onbeforeprint", "onbeforeunload", "onbeforeupdate", "onblur", "onbounce",
@@ -61,12 +63,8 @@ public class HtmlUtilityService : IHtmlUtilityService
             // Remove script and style elements completely
             var scriptsAndStyles = doc.DocumentNode.SelectNodes("//script | //style");
             if (scriptsAndStyles != null)
-            {
                 foreach (var node in scriptsAndStyles)
-                {
                     node.Remove();
-                }
-            }
 
             var text = doc.DocumentNode.InnerText;
 
@@ -102,12 +100,8 @@ public class HtmlUtilityService : IHtmlUtilityService
             // Remove script and style elements
             var scriptsAndStyles = doc.DocumentNode.SelectNodes("//script | //style");
             if (scriptsAndStyles != null)
-            {
                 foreach (var node in scriptsAndStyles)
-                {
                     node.Remove();
-                }
-            }
 
             // Handle special elements before getting text
             HandleSpecialElements(doc, preserveImages);
@@ -165,7 +159,8 @@ public class HtmlUtilityService : IHtmlUtilityService
         {
             _logger?.LogError(ex, "Error sanitizing HTML, falling back to simple cleaning");
             // Fallback to simple regex cleaning
-            var sanitized = Regex.Replace(html, @"<script[^>]*>.*?</script>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var sanitized = Regex.Replace(html, @"<script[^>]*>.*?</script>", "",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
             sanitized = Regex.Replace(sanitized, @"<link[^>]*>", "", RegexOptions.IgnoreCase);
             sanitized = Regex.Replace(sanitized, @"on\w+\s*=\s*[""'][^""']*[""']", "", RegexOptions.IgnoreCase);
             return sanitized;
@@ -191,7 +186,7 @@ public class HtmlUtilityService : IHtmlUtilityService
         // Look for actual HTML tag patterns
         // This regex matches proper HTML tags: <tag>, </tag>, <tag attr="value">, <tag/>
         var htmlTagPattern = @"<\s*/?[a-zA-Z][a-zA-Z0-9]*(?:\s+[^<>]*?)?\s*/?>";
-        var xmlPattern = @"<\?\w+[^>]*\?>";  // XML declarations like <?xml ?>
+        var xmlPattern = @"<\?\w+[^>]*\?>"; // XML declarations like <?xml ?>
 
         return Regex.IsMatch(content, htmlTagPattern, RegexOptions.IgnoreCase) ||
                Regex.IsMatch(content, xmlPattern, RegexOptions.IgnoreCase);
@@ -225,9 +220,7 @@ public class HtmlUtilityService : IHtmlUtilityService
             if (string.IsNullOrWhiteSpace(innerContent) ||
                 innerContent.Equals("and", StringComparison.OrdinalIgnoreCase) ||
                 Regex.IsMatch(innerContent, @"^[\s\w]*\s+and\s+[\s\w]*$", RegexOptions.IgnoreCase))
-            {
                 return true;
-            }
         }
 
         return false;
@@ -239,12 +232,8 @@ public class HtmlUtilityService : IHtmlUtilityService
         {
             var nodes = doc.DocumentNode.SelectNodes($"//{tag}");
             if (nodes != null)
-            {
                 foreach (var node in nodes.ToList())
-                {
                     node.Remove();
-                }
-            }
         }
     }
 
@@ -252,7 +241,6 @@ public class HtmlUtilityService : IHtmlUtilityService
     {
         var allNodes = doc.DocumentNode.SelectNodes("//*[@*]");
         if (allNodes != null)
-        {
             foreach (var node in allNodes)
             {
                 var attributesToRemove = new List<HtmlAttribute>();
@@ -292,19 +280,14 @@ public class HtmlUtilityService : IHtmlUtilityService
                     }
                 }
 
-                foreach (var attr in attributesToRemove)
-                {
-                    node.Attributes.Remove(attr);
-                }
+                foreach (var attr in attributesToRemove) node.Attributes.Remove(attr);
             }
-        }
     }
 
     private void MakeLinksSafe(HtmlDocument doc)
     {
         var linkNodes = doc.DocumentNode.SelectNodes("//a[@href]");
         if (linkNodes != null)
-        {
             foreach (var link in linkNodes)
             {
                 link.SetAttributeValue("target", "_blank");
@@ -312,31 +295,22 @@ public class HtmlUtilityService : IHtmlUtilityService
 
                 // Validate href attribute
                 var href = link.GetAttributeValue("href", "");
-                if (IsUnsafeUrl(href))
-                {
-                    link.Remove();
-                }
+                if (IsUnsafeUrl(href)) link.Remove();
             }
-        }
     }
 
     private void MakeImagesSafe(HtmlDocument doc)
     {
         var imgNodes = doc.DocumentNode.SelectNodes("//img");
         if (imgNodes != null)
-        {
             foreach (var img in imgNodes)
             {
                 img.SetAttributeValue("style", "max-width: 100%; height: auto;");
 
                 // Validate src attribute
                 var src = img.GetAttributeValue("src", "");
-                if (IsUnsafeUrl(src))
-                {
-                    img.Remove();
-                }
+                if (IsUnsafeUrl(src)) img.Remove();
             }
-        }
     }
 
     private bool IsUnsafeUrl(string url)
@@ -370,17 +344,12 @@ public class HtmlUtilityService : IHtmlUtilityService
         // Handle line breaks
         var brNodes = doc.DocumentNode.SelectNodes("//br");
         if (brNodes != null)
-        {
             foreach (var br in brNodes)
-            {
                 br.ParentNode.ReplaceChild(HtmlNode.CreateNode("\n"), br);
-            }
-        }
 
         // Handle paragraphs and divs - add line breaks
         var blockNodes = doc.DocumentNode.SelectNodes("//p | //div | //h1 | //h2 | //h3 | //h4 | //h5 | //h6");
         if (blockNodes != null)
-        {
             foreach (var block in blockNodes)
             {
                 // Add newline after block elements
@@ -390,12 +359,10 @@ public class HtmlUtilityService : IHtmlUtilityService
                 var textNode = HtmlNode.CreateNode(newlineAfter);
                 block.ParentNode.InsertAfter(textNode, block);
             }
-        }
 
         // Handle list items
         var liNodes = doc.DocumentNode.SelectNodes("//li");
         if (liNodes != null)
-        {
             foreach (var li in liNodes)
             {
                 var bullet = HtmlNode.CreateNode("• ");
@@ -404,12 +371,10 @@ public class HtmlUtilityService : IHtmlUtilityService
                 var newline = HtmlNode.CreateNode("\n");
                 li.ParentNode.InsertAfter(newline, li);
             }
-        }
 
         // Handle links
         var linkNodes = doc.DocumentNode.SelectNodes("//a[@href]");
         if (linkNodes != null)
-        {
             foreach (var link in linkNodes)
             {
                 var href = link.GetAttributeValue("href", "");
@@ -419,14 +384,12 @@ public class HtmlUtilityService : IHtmlUtilityService
                     link.ParentNode.InsertAfter(linkText, link);
                 }
             }
-        }
 
         // Handle images
         if (preserveImages)
         {
             var imgNodes = doc.DocumentNode.SelectNodes("//img");
             if (imgNodes != null)
-            {
                 foreach (var img in imgNodes)
                 {
                     var alt = img.GetAttributeValue("alt", "");
@@ -434,25 +397,19 @@ public class HtmlUtilityService : IHtmlUtilityService
                     var placeholder = HtmlNode.CreateNode($"[IMAGE: {(!string.IsNullOrEmpty(alt) ? alt : src)}]");
                     img.ParentNode.ReplaceChild(placeholder, img);
                 }
-            }
         }
         else
         {
             // Remove images if not preserving them
             var imgNodes = doc.DocumentNode.SelectNodes("//img");
             if (imgNodes != null)
-            {
                 foreach (var img in imgNodes)
-                {
                     img.Remove();
-                }
-            }
         }
 
         // Handle blockquotes
         var quoteNodes = doc.DocumentNode.SelectNodes("//blockquote");
         if (quoteNodes != null)
-        {
             foreach (var quote in quoteNodes)
             {
                 var prefix = HtmlNode.CreateNode("> ");
@@ -461,40 +418,33 @@ public class HtmlUtilityService : IHtmlUtilityService
                 var newline = HtmlNode.CreateNode("\n");
                 quote.ParentNode.InsertAfter(newline, quote);
             }
-        }
 
         // Handle horizontal rules
         var hrNodes = doc.DocumentNode.SelectNodes("//hr");
         if (hrNodes != null)
-        {
             foreach (var hr in hrNodes)
             {
                 var rule = HtmlNode.CreateNode("\n---\n");
                 hr.ParentNode.ReplaceChild(rule, hr);
             }
-        }
 
         // Handle table cells
         var cellNodes = doc.DocumentNode.SelectNodes("//td | //th");
         if (cellNodes != null)
-        {
             foreach (var cell in cellNodes)
             {
                 var separator = HtmlNode.CreateNode(" | ");
                 cell.ParentNode.InsertAfter(separator, cell);
             }
-        }
 
         // Handle table rows
         var rowNodes = doc.DocumentNode.SelectNodes("//tr");
         if (rowNodes != null)
-        {
             foreach (var row in rowNodes)
             {
                 var newline = HtmlNode.CreateNode("\n");
                 row.ParentNode.InsertAfter(newline, row);
             }
-        }
     }
 
     private string SimpleStripHtml(string html)

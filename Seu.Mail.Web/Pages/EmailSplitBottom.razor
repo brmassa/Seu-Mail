@@ -45,8 +45,9 @@
                 <div class="email-list">
                     @foreach (var email in emails)
                     {
-                        <div class="email-item @(email.IsRead ? "read" : "unread") @(selectedEmail?.Id == email.Id ? "selected" : "") @(userSettings?.UseCompactMode == true ? "compact" : "")"
-                             @onclick="() => SelectEmail(email.Id)">
+                        <div
+                            class="email-item @(email.IsRead ? "read" : "unread") @(selectedEmail?.Id == email.Id ? "selected" : "") @(userSettings?.UseCompactMode == true ? "compact" : "")"
+                            @onclick="() => SelectEmail(email.Id)">
                             <div class="email-content d-flex p-2">
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-start">
@@ -54,7 +55,8 @@
                                             @if (userSettings?.EmailDisplayMode == EmailDisplayMode.TitleSender || userSettings?.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)
                                             {
                                                 <strong class="sender-name small">@GetSenderName(email.From)</strong>
-                                                <span class="sender-email text-muted small ms-1">@GetSenderEmail(email.From)</span>
+                                                <span
+                                                    class="sender-email text-muted small ms-1">@GetSenderEmail(email.From)</span>
                                             }
                                         </div>
                                         <div class="email-meta text-muted">
@@ -117,11 +119,13 @@
                                 <i class="fas fa-arrow-left"></i>
                                 Back to Inbox
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm me-2" @onclick="PreviousEmail" disabled="@(!hasPrevious)">
+                            <button class="btn btn-outline-secondary btn-sm me-2" @onclick="PreviousEmail"
+                                    disabled="@(!hasPrevious)">
                                 <i class="fas fa-chevron-left"></i>
                                 Previous
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm me-2" @onclick="NextEmail" disabled="@(!hasNext)">
+                            <button class="btn btn-outline-secondary btn-sm me-2" @onclick="NextEmail"
+                                    disabled="@(!hasNext)">
                                 <i class="fas fa-chevron-right"></i>
                                 Next
                             </button>
@@ -131,7 +135,8 @@
                             </button>
                         </div>
                         <div class="email-meta-actions">
-                            <button class="btn btn-outline-primary btn-sm me-2" @onclick="PrintEmail" title="Print email">
+                            <button class="btn btn-outline-primary btn-sm me-2" @onclick="PrintEmail"
+                                    title="Print email">
                                 <i class="fas fa-print"></i>
                                 Print
                             </button>
@@ -144,7 +149,8 @@
 
                     <!-- Dedicated Action Bar -->
                     <div class="email-actions-bar mb-3 d-flex justify-content-start gap-2">
-                        <button class="btn btn-outline-warning btn-sm" @onclick="ToggleImportant" title="@(selectedEmail.IsImportant ? "Remove from important" : "Mark as important")">
+                        <button class="btn btn-outline-warning btn-sm" @onclick="ToggleImportant"
+                                title="@(selectedEmail.IsImportant ? "Remove from important" : "Mark as important")">
                             <i class="fas fa-star @(selectedEmail.IsImportant ? "text-warning" : "")"></i>
                             @(selectedEmail.IsImportant ? "Unstar" : "Star")
                         </button>
@@ -162,7 +168,8 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div class="sender-info">
                                 <strong>From:</strong>
-                                <span class="ms-2">@GetSenderName(selectedEmail.From) &lt;@GetSenderEmail(selectedEmail.From)&gt;</span>
+                                <span
+                                    class="ms-2">@GetSenderName(selectedEmail.From) &lt;@GetSenderEmail(selectedEmail.From)&gt;</span>
                             </div>
                             <div class="email-date">
                                 <i class="fas fa-clock me-1"></i>
@@ -251,18 +258,21 @@
                                         {
                                             convertedText = HtmlUtilityService.StripHtml(selectedEmail.HtmlBody ?? "");
                                         }
+
                                         // Final fallback if still empty
                                         if (string.IsNullOrWhiteSpace(convertedText))
                                         {
                                             convertedText = "Email content could not be displayed in text format. Please enable HTML view.";
                                         }
                                     }
-                                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">@convertedText</pre>
+                                    <pre
+                                        style="white-space: pre-wrap; font-family: inherit; margin: 0;">@convertedText</pre>
                                 </div>
                             }
                             else if (hasTextContent)
                             {
-                                <pre class="text-content" style="white-space: pre-wrap; font-family: inherit; margin: 0;">@selectedEmail.TextBody</pre>
+                                <pre class="text-content"
+                                     style="white-space: pre-wrap; font-family: inherit; margin: 0;">@selectedEmail.TextBody</pre>
                             }
                         }
                         else
@@ -289,9 +299,11 @@
                                             </div>
                                             <div class="attachment-info flex-grow-1">
                                                 <div class="attachment-name small fw-bold">@attachment.FileName</div>
-                                                <div class="attachment-size text-muted small">@FormatFileSize(attachment.Size)</div>
+                                                <div
+                                                    class="attachment-size text-muted small">@FormatFileSize(attachment.Size)</div>
                                             </div>
-                                            <button class="btn btn-outline-primary btn-sm" @onclick="() => DownloadAttachment(attachment)">
+                                            <button class="btn btn-outline-primary btn-sm"
+                                                    @onclick="() => DownloadAttachment(attachment)">
                                                 <i class="fas fa-download"></i>
                                             </button>
                                         </div>
@@ -339,6 +351,7 @@
             {
                 await LoadEmails();
             }
+
             await LoadEmail();
         }
     }
@@ -683,6 +696,7 @@
                     {
                         printContent = HtmlUtilityService.StripHtml(selectedEmail.HtmlBody ?? "");
                     }
+
                     isHtml = false;
                 }
                 else if (hasTextContent)
@@ -715,9 +729,9 @@
     }
 
 
-
     public void Dispose()
     {
         objRef?.Dispose();
     }
+
 }

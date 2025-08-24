@@ -202,6 +202,7 @@ public class FolderTagService : IFolderTagService
                 await _context.SaveChangesAsync();
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -227,6 +228,7 @@ public class FolderTagService : IFolderTagService
                 await _context.SaveChangesAsync();
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)
@@ -318,6 +320,7 @@ public class FolderTagService : IFolderTagService
 
                 return true;
             }
+
             return false;
         }
         catch (Exception ex)

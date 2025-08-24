@@ -225,13 +225,9 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 
             // Assert - Some providers may have Mozilla autoconfig available
             if (result != null)
-            {
                 await Assert.That(result.DisplayName).IsNotNull();
-            }
             else
-            {
                 await Assert.That(result).IsNull(); // Acceptable in test environment
-            }
         }
         catch (TaskCanceledException)
         {
@@ -365,10 +361,7 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 
         // Assert
         // Should handle malformed responses gracefully
-        if (result != null)
-        {
-            await Assert.That(result.ImapServer).IsNotNull();
-        }
+        if (result != null) await Assert.That(result.ImapServer).IsNotNull();
     }
 
     #endregion
@@ -477,13 +470,11 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
 
             // Each result can be null (expected in test environment) or valid settings
             foreach (var result in results)
-            {
                 if (result != null)
                 {
                     await Assert.That(result.ImapServer).IsNotNull();
                     await Assert.That(result.SmtpServer).IsNotNull();
                 }
-            }
         }
         catch (TaskCanceledException)
         {
@@ -561,10 +552,7 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
             var result = await _autodiscoveryService.TryMozillaAutoconfigAsync(subdomain);
 
             // Assert
-            if (result != null)
-            {
-                await Assert.That(result.DisplayName).IsNotNull();
-            }
+            if (result != null) await Assert.That(result.DisplayName).IsNotNull();
         }
     }
 
@@ -594,10 +582,7 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
         var result = await _autodiscoveryService.AutodiscoverAsync(emailAddress);
 
         // Assert
-        if (result != null)
-        {
-            await Assert.That(result.DisplayName).IsEqualTo("DNS Discovered");
-        }
+        if (result != null) await Assert.That(result.DisplayName).IsEqualTo("DNS Discovered");
     }
 
     #endregion
@@ -655,7 +640,8 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
     </Response>
 </Autodiscover>";
 
-        _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml", outlookResponse);
+        _mockHttpClient.SetupPostResponse($"https://autodiscover.{domain}/autodiscover/autodiscover.xml",
+            outlookResponse);
 
         // Act
         var result = await _autodiscoveryService.AutodiscoverAsync(emailAddress);
@@ -740,10 +726,7 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
         var startTime = DateTime.UtcNow;
 
         // Act - Test multiple domains in sequence
-        foreach (var domain in testDomains)
-        {
-            await _autodiscoveryService.AutodiscoverAsync($"test@{domain}");
-        }
+        foreach (var domain in testDomains) await _autodiscoveryService.AutodiscoverAsync($"test@{domain}");
 
         // Assert
         var totalDuration = DateTime.UtcNow - startTime;
@@ -778,15 +761,9 @@ public class EmailAutodiscoveryServiceTests : IAsyncDisposable
             $"https://{testDomain}/.well-known/autoconfig/mail/config-v1.1.xml"
         };
 
-        foreach (var url in autodiscoverUrls)
-        {
-            _mockHttpClient.SetupPostResponse(url, null);
-        }
+        foreach (var url in autodiscoverUrls) _mockHttpClient.SetupPostResponse(url, null);
 
-        foreach (var url in autoconfigUrls)
-        {
-            _mockHttpClient.SetupGetResponse(url, null);
-        }
+        foreach (var url in autoconfigUrls) _mockHttpClient.SetupGetResponse(url, null);
 
         var startTime = DateTime.UtcNow;
 

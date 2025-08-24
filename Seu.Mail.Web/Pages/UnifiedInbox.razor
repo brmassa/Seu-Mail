@@ -31,7 +31,8 @@
                     <i class="fas fa-check-square"></i>
                     Select All
                 </button>
-                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected" disabled="@(!selectedEmails.Any())">
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelected"
+                        disabled="@(!selectedEmails.Any())">
                     <i class="fas fa-trash"></i>
                     Delete (@selectedEmails.Count)
                 </button>
@@ -120,8 +121,9 @@
 
                     @foreach (var email in emailGroup.OrderByDescending(e => e.DateReceived))
                     {
-                        <div class="unified-email-item @(email.IsRead ? "read" : "unread") @(selectedEmails.Contains(email.Id) ? "selected" : "") @(userSettings.UseCompactMode ? "compact" : "")"
-                             @onclick="() => SelectEmail(email.Id)">
+                        <div
+                            class="unified-email-item @(email.IsRead ? "read" : "unread") @(selectedEmails.Contains(email.Id) ? "selected" : "") @(userSettings.UseCompactMode ? "compact" : "")"
+                            @onclick="() => SelectEmail(email.Id)">
                             <div class="email-checkbox">
                                 <input type="checkbox" class="form-check-input"
                                        checked="@selectedEmails.Contains(email.Id)"
@@ -131,18 +133,21 @@
 
                             <!-- Account Badge -->
                             <div class="account-badge me-3">
-                                <span class="badge rounded-pill" style="background-color: @GetAccountColor(email.AccountId)">
+                                <span class="badge rounded-pill"
+                                      style="background-color: @GetAccountColor(email.AccountId)">
                                     @GetAccountInitials(email.AccountId)
                                 </span>
                             </div>
 
-                            <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email)" @onclick:stopPropagation="true">
+                            <div class="email-content flex-grow-1" @onclick="() => ViewEmail(email)"
+                                 @onclick:stopPropagation="true">
                                 <div class="email-header d-flex justify-content-between align-items-start">
                                     <div class="email-sender">
                                         @if (userSettings.EmailDisplayMode == EmailDisplayMode.TitleSender || userSettings.EmailDisplayMode == EmailDisplayMode.TitleSenderPreview)
                                         {
                                             <strong class="sender-name">@GetSenderName(email.From)</strong>
-                                            <span class="sender-email text-muted ms-1">@GetSenderEmail(email.From)</span>
+                                            <span
+                                                class="sender-email text-muted ms-1">@GetSenderEmail(email.From)</span>
                                         }
                                     </div>
                                     <div class="email-meta text-muted d-flex align-items-center gap-2">
@@ -172,10 +177,13 @@
                             </div>
 
                             <div class="email-actions">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleImportant(email)" @onclick:stopPropagation="true" title="@(email.IsImportant ? "Remove star" : "Add star")">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleImportant(email)"
+                                        @onclick:stopPropagation="true"
+                                        title="@(email.IsImportant ? "Remove star" : "Add star")">
                                     <i class="fas fa-star @(email.IsImportant ? "text-warning" : "")"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSingleEmail(email)" @onclick:stopPropagation="true" title="Delete">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSingleEmail(email)"
+                                        @onclick:stopPropagation="true" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -490,6 +498,7 @@
             else
                 return date.ToString("MMMM dd, yyyy");
         }
+
         return dateKey;
     }
 

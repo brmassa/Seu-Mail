@@ -7,8 +7,6 @@ using Seu.Mail.Contracts.Services;
 
 namespace Seu.Mail.Services;
 
-
-
 /// <summary>
 /// Provides autodiscovery services for email provider settings using various protocols and heuristics.
 /// </summary>
@@ -52,10 +50,7 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
         }
 
         var domain = ExtractDomain(emailAddress);
-        if (string.IsNullOrEmpty(domain))
-        {
-            return null;
-        }
+        if (string.IsNullOrEmpty(domain)) return null;
 
         _logger.LogInformation("Starting autodiscovery for email: {Email}, domain: {Domain}", emailAddress, domain);
 
@@ -70,7 +65,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
         };
 
         foreach (var method in discoveryMethods)
-        {
             try
             {
                 var result = await method();
@@ -86,7 +80,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 _logger.LogDebug(ex, "Autodiscovery method {Method} failed for {Email}",
                     method.Method.Name, emailAddress);
             }
-        }
 
         _logger.LogWarning("All autodiscovery methods failed for email: {Email}", emailAddress);
         return null;
@@ -113,7 +106,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             var requestXml = CreateOutlookAutodiscoverRequest(emailAddress);
 
             foreach (var url in autodiscoverUrls)
-            {
                 try
                 {
                     var responseXml = await _httpClient.PostStringAsync(url, requestXml, "text/xml");
@@ -122,7 +114,8 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                         var settings = ParseOutlookAutodiscoverResponse(responseXml, domain);
                         if (settings != null)
                         {
-                            _logger.LogInformation("Outlook autodiscover successful for {Email} at {Url}", emailAddress, url);
+                            _logger.LogInformation("Outlook autodiscover successful for {Email} at {Url}", emailAddress,
+                                url);
                             return settings;
                         }
                     }
@@ -131,7 +124,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 {
                     _logger.LogDebug(ex, "Outlook autodiscover failed at {Url} for {Email}", url, emailAddress);
                 }
-            }
 
             return null;
         }
@@ -160,7 +152,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             };
 
             foreach (var url in autoconfigUrls)
-            {
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
@@ -169,7 +160,8 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                         var settings = ParseMozillaAutoconfigResponse(response, domain);
                         if (settings != null)
                         {
-                            _logger.LogInformation("Mozilla autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            _logger.LogInformation("Mozilla autoconfig successful for domain {Domain} at {Url}", domain,
+                                url);
                             return settings;
                         }
                     }
@@ -178,7 +170,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 {
                     _logger.LogDebug(ex, "Mozilla autoconfig failed at {Url} for domain {Domain}", url, domain);
                 }
-            }
 
             return null;
         }
@@ -205,7 +196,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             };
 
             foreach (var url in autoconfigUrls)
-            {
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
@@ -214,7 +204,8 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                         var settings = ParseAppleAutoconfigResponse(response, domain);
                         if (settings != null)
                         {
-                            _logger.LogInformation("Apple autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            _logger.LogInformation("Apple autoconfig successful for domain {Domain} at {Url}", domain,
+                                url);
                             return settings;
                         }
                     }
@@ -223,7 +214,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 {
                     _logger.LogDebug(ex, "Apple autoconfig failed at {Url} for domain {Domain}", url, domain);
                 }
-            }
 
             return null;
         }
@@ -233,7 +223,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             return null;
         }
     }
-
 
 
     /// <summary>
@@ -254,7 +243,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
             };
 
             foreach (var url in wellKnownUrls)
-            {
                 try
                 {
                     var response = await _httpClient.GetStringAsync(url);
@@ -263,7 +251,8 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                         var settings = ParseWellKnownResponse(response, domain);
                         if (settings != null)
                         {
-                            _logger.LogInformation("Well-known autoconfig successful for domain {Domain} at {Url}", domain, url);
+                            _logger.LogInformation("Well-known autoconfig successful for domain {Domain} at {Url}",
+                                domain, url);
                             return settings;
                         }
                     }
@@ -272,7 +261,6 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 {
                     _logger.LogDebug(ex, "Well-known autoconfig failed at {Url} for domain {Domain}", url, domain);
                 }
-            }
 
             return null;
         }
@@ -315,11 +303,13 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
 
             var imapServer = imapProtocol.Element(ns + "Server")?.Value;
             var imapPort = int.TryParse(imapProtocol.Element(ns + "Port")?.Value, out var iPort) ? iPort : 993;
-            var imapSsl = imapProtocol.Element(ns + "SSL")?.Value?.Equals("on", StringComparison.OrdinalIgnoreCase) == true;
+            var imapSsl = imapProtocol.Element(ns + "SSL")?.Value?.Equals("on", StringComparison.OrdinalIgnoreCase) ==
+                          true;
 
             var smtpServer = smtpProtocol.Element(ns + "Server")?.Value;
             var smtpPort = int.TryParse(smtpProtocol.Element(ns + "Port")?.Value, out var sPort) ? sPort : 587;
-            var smtpSsl = smtpProtocol.Element(ns + "SSL")?.Value?.Equals("on", StringComparison.OrdinalIgnoreCase) == true;
+            var smtpSsl = smtpProtocol.Element(ns + "SSL")?.Value?.Equals("on", StringComparison.OrdinalIgnoreCase) ==
+                          true;
 
             if (string.IsNullOrEmpty(imapServer) || string.IsNullOrEmpty(smtpServer))
                 return null;
@@ -370,7 +360,7 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
                 return null;
 
             var useSsl = imapSocketType == "SSL" || smtpSocketType == "SSL" ||
-                        imapSocketType == "STARTTLS" || smtpSocketType == "STARTTLS";
+                         imapSocketType == "STARTTLS" || smtpSocketType == "STARTTLS";
 
             return new EmailProviderSettings
             {
@@ -401,16 +391,10 @@ public class EmailAutodiscoveryService : IEmailAutodiscoveryService
         try
         {
             // Try to parse as JSON first
-            if (response.TrimStart().StartsWith('{'))
-            {
-                return ParseWellKnownJsonResponse(response, domain);
-            }
+            if (response.TrimStart().StartsWith('{')) return ParseWellKnownJsonResponse(response, domain);
 
             // Try to parse as XML
-            if (response.TrimStart().StartsWith('<'))
-            {
-                return ParseMozillaAutoconfigResponse(response, domain);
-            }
+            if (response.TrimStart().StartsWith('<')) return ParseMozillaAutoconfigResponse(response, domain);
 
             return null;
         }

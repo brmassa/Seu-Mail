@@ -1,38 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Seu.Mail.Contracts</RootNamespace>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors>$(WarningsNotAsErrors);1591</WarningsAsErrors>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Seu.Mail.Contracts</RootNamespace>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsAsErrors>$(WarningsNotAsErrors);1591</WarningsAsErrors>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageId>Seu.Mail.Contracts</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Bruno Massa</Authors>
-    <Company>Seu Project</Company>
-    <Product>Seu Mail</Product>
-    <Description>Service contracts and interfaces for Seu Mail - a privacy-focused email client</Description>
-    <Copyright>Copyright © 2024 Bruno Massa</Copyright>
-    <PackageProjectUrl>https://github.com/brmassa/Seu-Mail</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/brmassa/Seu-Mail</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>email;privacy;contracts;interfaces;dto</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
+    <PropertyGroup>
+        <PackageId>Seu.Mail.Contracts</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>Bruno Massa</Authors>
+        <Company>Seu Project</Company>
+        <Product>Seu Mail</Product>
+        <Description>Service contracts and interfaces for Seu Mail - a privacy-focused email client</Description>
+        <Copyright>Copyright © 2024 Bruno Massa</Copyright>
+        <PackageProjectUrl>https://github.com/brmassa/Seu-Mail</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/brmassa/Seu-Mail</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>email;privacy;contracts;interfaces;dto</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Seu.Mail.Core\Seu.Mail.Core.csproj"/>
+    </ItemGroup>
 
 </Project>

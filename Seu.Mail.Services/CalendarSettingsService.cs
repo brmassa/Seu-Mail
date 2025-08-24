@@ -413,7 +413,7 @@ public class CalendarSettingsService : ICalendarSettingsService
     /// <returns>A task that represents the asynchronous operation. The task result contains the imported calendar settings.</returns>
     public async Task<CalendarSettings> ImportSettingsAsync(int accountId, string settingsData, string format = "json")
     {
-        CalendarSettings importedSettings = format.ToLower() switch
+        var importedSettings = format.ToLower() switch
         {
             "json" => JsonSerializer.Deserialize<CalendarSettings>(settingsData, new JsonSerializerOptions
             {
@@ -429,9 +429,7 @@ public class CalendarSettingsService : ICalendarSettingsService
         // Validate the imported settings
         var validation = await ValidateSettingsAsync(importedSettings);
         if (!validation.IsValid)
-        {
             throw new ArgumentException($"Invalid settings: {string.Join(", ", validation.Errors)}");
-        }
 
         return await SaveSettingsAsync(importedSettings);
     }

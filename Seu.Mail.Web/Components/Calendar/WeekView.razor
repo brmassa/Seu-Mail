@@ -21,7 +21,7 @@
 
     <div class="week-body">
         <div class="time-column">
-            @for (int hour = StartHour; hour <= EndHour; hour++)
+            @for (var hour = StartHour; hour <= EndHour; hour++)
             {
                 <div class="time-slot">
                     <span class="time-label">@hour.ToString("00"):00</span>
@@ -32,15 +32,18 @@
         @foreach (var day in GetWeekDays())
         {
             <div class="day-column" @onclick="() => OnDayClick(day)">
-                @for (int hour = StartHour; hour <= EndHour; hour++)
+                @for (var hour = StartHour; hour <= EndHour; hour++)
                 {
-                    <div class="time-slot" @onclick="() => HandleTimeSlotClick(day.Date.AddHours(hour))" @onclick:stopPropagation="true">
+                    <div class="time-slot" @onclick="() => HandleTimeSlotClick(day.Date.AddHours(hour))"
+                         @onclick:stopPropagation="true">
                         @foreach (var evt in GetEventsForTimeSlot(day, hour))
                         {
-                            <div class="event-item" style="background-color: @evt.Color; height: @GetEventHeight(evt)px; top: @GetEventTop(evt)px"
+                            <div class="event-item"
+                                 style="background-color: @evt.Color; height: @GetEventHeight(evt)px; top: @GetEventTop(evt)px"
                                  @onclick="() => HandleEventClick(evt)" @onclick:stopPropagation="true">
                                 <div class="event-title">@evt.Title</div>
-                                <div class="event-time">@evt.StartDateTime.ToString("HH:mm") - @evt.EndDateTime.ToString("HH:mm")</div>
+                                <div
+                                    class="event-time">@evt.StartDateTime.ToString("HH:mm") - @evt.EndDateTime.ToString("HH:mm")</div>
                             </div>
                         }
                     </div>
@@ -51,35 +54,42 @@
 </div>
 
 @code {
+
     /// <summary>
     /// Gets or sets the list of calendar events to display in the week view.
     /// </summary>
-    [Parameter] public List<CalendarEvent>? Events { get; set; }
+    [Parameter]
+    public List<CalendarEvent>? Events { get; set; }
 
     /// <summary>
     /// Gets or sets the current date that determines which week to display.
     /// </summary>
-    [Parameter] public DateTime CurrentDate { get; set; } = DateTime.Today;
+    [Parameter]
+    public DateTime CurrentDate { get; set; } = DateTime.Today;
 
     /// <summary>
     /// Gets or sets the calendar settings that control view behavior.
     /// </summary>
-    [Parameter] public CalendarSettings? Settings { get; set; }
+    [Parameter]
+    public CalendarSettings? Settings { get; set; }
 
     /// <summary>
     /// Event callback triggered when an event is clicked.
     /// </summary>
-    [Parameter] public EventCallback<CalendarEvent> OnEventClick { get; set; }
+    [Parameter]
+    public EventCallback<CalendarEvent> OnEventClick { get; set; }
 
     /// <summary>
     /// Event callback triggered when a time slot is clicked.
     /// </summary>
-    [Parameter] public EventCallback<DateTime> OnTimeSlotClick { get; set; }
+    [Parameter]
+    public EventCallback<DateTime> OnTimeSlotClick { get; set; }
 
     /// <summary>
     /// Event callback triggered when an event is dropped to a new time.
     /// </summary>
-    [Parameter] public EventCallback<(CalendarEvent, DateTime)> OnEventDrop { get; set; }
+    [Parameter]
+    public EventCallback<(CalendarEvent, DateTime)> OnEventDrop { get; set; }
 
     /// <summary>
     /// Gets the starting hour for the day view from settings or default value.
@@ -106,7 +116,7 @@
         }
 
         var days = new List<DateTime>();
-        for (int i = 0; i < 7; i++)
+        for (var i = 0; i < 7; i++)
         {
             days.Add(startOfWeek.AddDays(i));
         }
@@ -128,10 +138,10 @@
         var slotEnd = slotStart.AddHours(1);
 
         return Events.Where(e =>
-            e.StartDateTime.Date == day.Date &&
-            e.StartDateTime < slotEnd &&
-            e.EndDateTime > slotStart &&
-            !e.IsAllDay)
+                e.StartDateTime.Date == day.Date &&
+                e.StartDateTime < slotEnd &&
+                e.EndDateTime > slotStart &&
+                !e.IsAllDay)
             .OrderBy(e => e.StartDateTime)
             .ToList();
     }
@@ -144,7 +154,7 @@
     private int GetEventHeight(CalendarEvent evt)
     {
         var duration = evt.EndDateTime - evt.StartDateTime;
-        return Math.Max(20, (int)(duration.TotalMinutes));
+        return Math.Max(20, (int)duration.TotalMinutes);
     }
 
     /// <summary>
@@ -187,129 +197,130 @@
     {
         await OnEventClick.InvokeAsync(evt);
     }
+
 }
 
 <style>
-.week-view {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
+    .week-view {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
 
-.week-header {
-    display: grid;
-    grid-template-columns: 80px repeat(7, 1fr);
-    border-bottom: 2px solid #dee2e6;
-    background-color: #f8f9fa;
-}
+    .week-header {
+        display: grid;
+        grid-template-columns: 80px repeat(7, 1fr);
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+    }
 
-.time-column {
-    border-right: 1px solid #dee2e6;
-}
+    .time-column {
+        border-right: 1px solid #dee2e6;
+    }
 
-.day-column {
-    text-align: center;
-    padding: 0.5rem;
-    border-right: 1px solid #dee2e6;
-    position: relative;
-}
+    .day-column {
+        text-align: center;
+        padding: 0.5rem;
+        border-right: 1px solid #dee2e6;
+        position: relative;
+    }
 
-.day-column:last-child {
-    border-right: none;
-}
+    .day-column:last-child {
+        border-right: none;
+    }
 
-.day-name {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 0.875rem;
-}
+    .day-name {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
 
-.day-number {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-top: 0.25rem;
-}
+    .day-number {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-top: 0.25rem;
+    }
 
-.day-number.today {
-    background-color: #007bff;
-    color: white;
-    border-radius: 50%;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0.25rem auto 0;
-}
+    .day-number.today {
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0.25rem auto 0;
+    }
 
-.week-body {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 80px repeat(7, 1fr);
-    overflow-y: auto;
-}
+    .week-body {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 80px repeat(7, 1fr);
+        overflow-y: auto;
+    }
 
-.week-body .time-column {
-    background-color: #f8f9fa;
-}
+    .week-body .time-column {
+        background-color: #f8f9fa;
+    }
 
-.time-slot {
-    height: 60px;
-    border-bottom: 1px solid #e9ecef;
-    position: relative;
-    cursor: pointer;
-}
+    .time-slot {
+        height: 60px;
+        border-bottom: 1px solid #e9ecef;
+        position: relative;
+        cursor: pointer;
+    }
 
-.time-slot:hover {
-    background-color: #f8f9fa;
-}
+    .time-slot:hover {
+        background-color: #f8f9fa;
+    }
 
-.time-label {
-    position: absolute;
-    top: -8px;
-    left: 0.5rem;
-    font-size: 0.75rem;
-    color: #6c757d;
-    background-color: #f8f9fa;
-    padding: 0 0.25rem;
-}
+    .time-label {
+        position: absolute;
+        top: -8px;
+        left: 0.5rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        padding: 0 0.25rem;
+    }
 
-.week-body .day-column {
-    border-right: 1px solid #dee2e6;
-    padding: 0;
-}
+    .week-body .day-column {
+        border-right: 1px solid #dee2e6;
+        padding: 0;
+    }
 
-.week-body .day-column .time-slot {
-    border-right: none;
-}
+    .week-body .day-column .time-slot {
+        border-right: none;
+    }
 
-.event-item {
-    position: absolute;
-    left: 2px;
-    right: 2px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    color: white;
-    font-size: 0.75rem;
-    cursor: pointer;
-    overflow: hidden;
-    z-index: 1;
-}
+    .event-item {
+        position: absolute;
+        left: 2px;
+        right: 2px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        color: white;
+        font-size: 0.75rem;
+        cursor: pointer;
+        overflow: hidden;
+        z-index: 1;
+    }
 
-.event-item:hover {
-    opacity: 0.8;
-}
+    .event-item:hover {
+        opacity: 0.8;
+    }
 
-.event-title {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    .event-title {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.event-time {
-    font-size: 0.6rem;
-    opacity: 0.9;
-}
+    .event-time {
+        font-size: 0.6rem;
+        opacity: 0.9;
+    }
 </style>

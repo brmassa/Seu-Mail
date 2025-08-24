@@ -31,7 +31,9 @@ public class EncryptionService : IEncryptionService
         if (string.IsNullOrEmpty(keyString))
         {
             keyString = GenerateSecureKey();
-            _logger.LogWarning("No encryption key found in configuration. Generated a new key. Please save this key: {Key}", keyString);
+            _logger.LogWarning(
+                "No encryption key found in configuration. Generated a new key. Please save this key: {Key}",
+                keyString);
         }
 
         _key = Convert.FromBase64String(keyString);
@@ -42,7 +44,8 @@ public class EncryptionService : IEncryptionService
         {
             using var aes = Aes.Create();
             _iv = aes.IV;
-            _logger.LogWarning("No encryption IV found in configuration. Generated a new IV: {IV}", Convert.ToBase64String(_iv));
+            _logger.LogWarning("No encryption IV found in configuration. Generated a new IV: {IV}",
+                Convert.ToBase64String(_iv));
         }
         else
         {
@@ -128,7 +131,8 @@ public class EncryptionService : IEncryptionService
         }
         catch (FormatException ex)
         {
-            _logger.LogWarning("Invalid Base64 format in encrypted data, treating as legacy plaintext: {Error}", ex.Message);
+            _logger.LogWarning("Invalid Base64 format in encrypted data, treating as legacy plaintext: {Error}",
+                ex.Message);
             return cipherText ?? string.Empty; // Treat as legacy plaintext
         }
         catch (Exception ex)
@@ -140,6 +144,7 @@ public class EncryptionService : IEncryptionService
                 _logger.LogWarning("Treating failed decryption as legacy plaintext password");
                 return cipherText ?? string.Empty;
             }
+
             throw new SecurityException("Failed to decrypt data", ex);
         }
     }
@@ -388,6 +393,7 @@ public class EncryptionService : IEncryptionService
             {
                 rng.GetBytes(keyBytes);
             }
+
             return Convert.ToBase64String(keyBytes);
         }
         catch (Exception ex)
@@ -407,12 +413,16 @@ public class SecurityException : Exception
     /// Initializes a new instance of the <see cref="SecurityException"/> class with a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
-    public SecurityException(string message) : base(message) { }
+    public SecurityException(string message) : base(message)
+    {
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SecurityException"/> class with a specified error message and a reference to the inner exception that is the cause of this exception.
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception reference.</param>
-    public SecurityException(string message, Exception innerException) : base(message, innerException) { }
+    public SecurityException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
 }

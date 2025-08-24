@@ -21,26 +21,32 @@ public class EmailDbContext : DbContext
     /// Gets or sets the email accounts.
     /// </summary>
     public DbSet<EmailAccount> EmailAccounts { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the email messages.
     /// </summary>
     public DbSet<EmailMessage> EmailMessages { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the email attachments.
     /// </summary>
     public DbSet<EmailAttachment> EmailAttachments { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the email folders.
     /// </summary>
     public DbSet<EmailFolder> EmailFolders { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the email tags.
     /// </summary>
     public DbSet<EmailTag> EmailTags { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the email message tags.
     /// </summary>
     public DbSet<EmailMessageTag> EmailMessageTags { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the user settings.
     /// </summary>
@@ -51,22 +57,27 @@ public class EmailDbContext : DbContext
     /// Gets or sets the calendar events.
     /// </summary>
     public DbSet<CalendarEvent> CalendarEvents { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the recurrence rules.
     /// </summary>
     public DbSet<RecurrenceRule> RecurrenceRules { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the event reminders.
     /// </summary>
     public DbSet<EventReminder> EventReminders { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the event attendees.
     /// </summary>
     public DbSet<EventAttendee> EventAttendees { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the calendar subscriptions.
     /// </summary>
     public DbSet<CalendarSubscription> CalendarSubscriptions { get; set; } = null!;
+
     /// <summary>
     /// Gets or sets the calendar settings.
     /// </summary>
