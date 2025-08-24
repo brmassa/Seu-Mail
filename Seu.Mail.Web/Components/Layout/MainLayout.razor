@@ -2,6 +2,7 @@
 @inject IEmailService EmailService
 @inject IAccountService AccountService
 @inject NavigationManager Navigation
+@using Seu.Mail.Core.Enums
 
 <div class="d-flex vh-100">
     <!-- Sidebar -->
@@ -187,17 +188,40 @@
         try
         {
             var accounts = await AccountService.GetAllAccountsAsync();
+            var successCount = 0;
+            var failedAccounts = new List<string>();
+
             foreach (var account in accounts)
             {
-                await EmailService.SyncEmailsAsync(account);
+                var syncResult = await EmailService.SyncEmailsAsync(account);
+                if (syncResult.Status == EmailSyncStatus.Success)
+                {
+                    successCount++;
+                }
+                else
+                {
+                    failedAccounts.Add($"{account.Email}: {syncResult.ErrorMessage}");
+                }
             }
 
             await UpdateUnreadCount();
-            ShowToastMessage("Success", "All accounts synced successfully.");
+
+            if (failedAccounts.Count == 0)
+            {
+                ShowToastMessage("Success", $"All {successCount} accounts synced successfully.");
+            }
+            else if (successCount > 0)
+            {
+                ShowToastMessage("Warning", $"{successCount} accounts synced successfully, but {failedAccounts.Count} failed. Check account settings for failed accounts.");
+            }
+            else
+            {
+                ShowToastMessage("Error", $"All sync attempts failed. Please check your account credentials and connection.");
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ShowToastMessage("Error", "Failed to sync accounts.");
+            ShowToastMessage("Error", $"Failed to sync accounts: {ex.Message}");
         }
         finally
         {

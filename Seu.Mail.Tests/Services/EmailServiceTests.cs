@@ -417,7 +417,7 @@ public class EmailServiceTests : IAsyncDisposable
         };
 
         // Act
-        var result = await _emailService.GetEmailsAsync(account);
+        var result = await _emailService.GetEmailsAsync(account, "INBOX");
 
         // Assert
         await Assert.That(result).IsNotNull();
@@ -529,7 +529,7 @@ public class EmailServiceTests : IAsyncDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _emailService.GetEmailsAsync(account);
+        var result = await _emailService.GetEmailsAsync(account, "INBOX");
 
         // Assert
         await Assert.That(result).IsNotNull();

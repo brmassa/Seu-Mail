@@ -4,6 +4,7 @@
 @inject IUserSettingsService UserSettingsService
 @inject IHtmlUtilityService HtmlUtilityService
 @inject NavigationManager Navigation
+@using Seu.Mail.Core.Enums
 
 <PageTitle>All Accounts - Seu Email</PageTitle>
 
@@ -298,9 +299,46 @@
         isLoading = true;
         try
         {
-            var syncTasks = accounts.Select(account => EmailService.SyncEmailsAsync(account));
-            await Task.WhenAll(syncTasks);
+            var successCount = 0;
+            var failedAccounts = new List<string>();
+
+            foreach (var account in accounts)
+            {
+                var syncResult = await EmailService.SyncEmailsAsync(account);
+                if (syncResult.Status == EmailSyncStatus.Success)
+                {
+                    successCount++;
+                }
+                else
+                {
+                    failedAccounts.Add($"{account.Email}: {syncResult.ErrorMessage}");
+                }
+            }
+
             await LoadAllEmails();
+
+            // Show appropriate message based on results
+            if (failedAccounts.Count == 0)
+            {
+                // Success - but don't show toast for successful syncs to avoid spam
+                Console.WriteLine($"All {successCount} accounts synced successfully.");
+            }
+            else if (successCount > 0)
+            {
+                Console.WriteLine($"Warning: {successCount} accounts synced successfully, but {failedAccounts.Count} failed.");
+                foreach (var failed in failedAccounts)
+                {
+                    Console.WriteLine($"Failed: {failed}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Error: All sync attempts failed. Please check your account credentials and connection.");
+                foreach (var failed in failedAccounts)
+                {
+                    Console.WriteLine($"Failed: {failed}");
+                }
+            }
         }
         catch (Exception ex)
         {

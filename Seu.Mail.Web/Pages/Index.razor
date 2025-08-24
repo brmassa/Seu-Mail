@@ -5,6 +5,7 @@
 @inject IUserSettingsService UserSettingsService
 @inject IHtmlUtilityService HtmlUtilityService
 @inject NavigationManager Navigation
+@using Seu.Mail.Core.Enums
 
 <PageTitle>Inbox - Seu Email</PageTitle>
 
@@ -214,7 +215,17 @@
             var account = await AccountService.GetDefaultAccountAsync();
             if (account != null)
             {
-                await EmailService.SyncEmailsAsync(account);
+                var syncResult = await EmailService.SyncEmailsAsync(account);
+
+                if (syncResult.Status == EmailSyncStatus.Success)
+                {
+                    Console.WriteLine($"Sync successful: {syncResult.NewEmailsCount} new emails downloaded.");
+                }
+                else
+                {
+                    Console.WriteLine($"Sync failed: {syncResult.ErrorMessage}");
+                }
+
                 await LoadEmails();
             }
         }

@@ -62,22 +62,30 @@ public class EmailService : IEmailService
     /// Gets a list of emails for the specified account and folder.
     /// </summary>
     /// <param name="account">The email account.</param>
-    /// <param name="folder">The folder name (default: INBOX).</param>
-    /// <param name="skip">Number of emails to skip for paging.</param>
-    /// <param name="take">Number of emails to take for paging.</param>
+    /// <param name="folderName">The folder name.</param>
+    /// <param name="count">Maximum number of emails to retrieve.</param>
+    /// <param name="offset">Number of emails to skip for pagination.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of email messages.</returns>
-    public async Task<List<EmailMessage>> GetEmailsAsync(EmailAccount account, string folder = "INBOX", int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+    public async Task<List<EmailMessage>> GetEmailsAsync(EmailAccount account, string folderName, int count = 50, int offset = 0, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await _context.EmailMessages
-                .Where(e => e.AccountId == account.Id && e.Folder == folder && !e.IsDeleted)
+            _logger.LogDebug("Getting {Count} emails from folder {Folder} (offset: {Offset}) for account {Email}",
+                count, folderName, offset, account.EmailAddress);
+
+            var emails = await _context.EmailMessages
+                .Where(e => e.AccountId == account.Id && e.Folder == folderName && !e.IsDeleted)
                 .OrderByDescending(e => e.DateReceived)
-                .Skip(skip)
-                .Take(take)
+                .Skip(offset)
+                .Take(count)
                 .Include(e => e.Attachments)
                 .ToListAsync(cancellationToken);
+
+            _logger.LogDebug("Retrieved {EmailCount} emails from database for account {Email}",
+                emails.Count, account.EmailAddress);
+
+            return emails;
         }
         catch (Exception ex)
         {
@@ -567,7 +575,7 @@ public class EmailService : IEmailService
             // Configure client timeouts (shorter individual timeout, but with retries)
             client.Timeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
 
-            _logger.LogDebug("Connecting to IMAP server {Server}:{Port} for account {Email}",
+            _logger.LogInformation("Connecting to IMAP server {Server}:{Port} for account {Email}",
                 account.ImapServer, account.ImapPort, account.EmailAddress);
 
             // Retry logic for connection
@@ -631,38 +639,60 @@ public class EmailService : IEmailService
             // Basic sync implementation - get recent messages (limit to last 50)
             var count = Math.Min(mailFolder.Count, 50);
             var newEmails = 0;
+
+            _logger.LogInformation("Folder {Folder} has {TotalCount} messages, fetching last {FetchCount} for account {Email}",
+                folderName, mailFolder.Count, count, account.EmailAddress);
+
             if (count > 0)
             {
                 var messages = await mailFolder.FetchAsync(Math.Max(0, mailFolder.Count - count), -1,
                     MessageSummaryItems.Envelope | MessageSummaryItems.Flags | MessageSummaryItems.UniqueId,
                     timeoutCts.Token);
 
+                _logger.LogInformation("Fetched {MessageCount} messages from server for account {Email}",
+                    messages.Count(), account.EmailAddress);
+
                 foreach (var message in messages)
                 {
                     try
                     {
                         var messageId = message.Envelope?.MessageId ?? $"uid-{message.UniqueId}";
+
+                        // Check if this message already exists
                         var existingEmail = await _context.EmailMessages
-                            .FirstOrDefaultAsync(e => e.MessageId == messageId, cancellationToken);
+                            .FirstOrDefaultAsync(e => e.MessageId == messageId && e.AccountId == account.Id, cancellationToken);
 
                         if (existingEmail == null)
                         {
+                            _logger.LogDebug("Processing new message: {Subject} from {From} for account {Email}",
+                                message.Envelope?.Subject ?? "(No Subject)",
+                                message.Envelope?.From?.FirstOrDefault()?.ToString() ?? "(Unknown)",
+                                account.EmailAddress);
+
                             var emailMessage = new EmailMessage
                             {
                                 AccountId = account.Id,
                                 MessageId = messageId,
                                 Subject = message.Envelope?.Subject ?? "(No Subject)",
-                                FromAddress = message.Envelope?.From?.FirstOrDefault()?.ToString() ?? "",
-                                ToAddress = message.Envelope?.To?.FirstOrDefault()?.ToString() ?? "",
+                                From = message.Envelope?.From?.FirstOrDefault()?.ToString() ?? "",
+                                To = message.Envelope?.To?.FirstOrDefault()?.ToString() ?? "",
                                 DateReceived = message.Envelope?.Date?.DateTime ?? DateTime.UtcNow,
+                                DateSent = message.Envelope?.Date?.DateTime ?? DateTime.UtcNow,
                                 IsRead = message.Flags?.HasFlag(MessageFlags.Seen) ?? false,
                                 IsImportant = message.Flags?.HasFlag(MessageFlags.Flagged) ?? false,
                                 Folder = folderName,
-                                Uid = message.UniqueId.Id
+                                ServerUid = message.UniqueId.Id,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
                             };
 
                             _context.EmailMessages.Add(emailMessage);
                             newEmails++;
+                        }
+                        else
+                        {
+                            _logger.LogDebug("Message {MessageId} already exists for account {Email}, skipping",
+                                messageId, account.EmailAddress);
                         }
                     }
                     catch (Exception ex)
@@ -675,7 +705,26 @@ public class EmailService : IEmailService
 
                 if (newEmails > 0)
                 {
-                    await _context.SaveChangesAsync(cancellationToken);
+                    _logger.LogInformation("Saving {NewEmails} new emails to database for account {Email}",
+                        newEmails, account.EmailAddress);
+
+                    try
+                    {
+                        await _context.SaveChangesAsync(cancellationToken);
+                        _logger.LogInformation("Successfully saved {NewEmails} new emails for account {Email}",
+                            newEmails, account.EmailAddress);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to save {NewEmails} emails to database for account {Email}",
+                            newEmails, account.EmailAddress);
+                        throw;
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("No new emails found for account {Email} - all {MessageCount} messages already exist",
+                        account.EmailAddress, messages.Count());
                 }
 
                 _logger.LogInformation("Synced {NewEmails} new emails from {Folder} for account {Email}",
