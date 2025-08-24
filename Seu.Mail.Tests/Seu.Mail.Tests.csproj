@@ -15,6 +15,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
 
         <PackageReference Include="TUnit" Version="0.57.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.8" />
