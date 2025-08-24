@@ -65,7 +65,7 @@ public class ValidationService : IValidationService
     }
 
     /// <summary>
-    /// Validates a password for length and complexity.
+    /// Validates a password for basic requirements (not empty and length limits).
     /// </summary>
     /// <param name="password">The password to validate.</param>
     /// <returns>Validation result.</returns>
@@ -76,25 +76,14 @@ public class ValidationService : IValidationService
             return new InputValidationResult(false, "Password is required");
         }
 
-        if (password.Length < 8)
+        if (password.Length < 1)
         {
-            return new InputValidationResult(false, "Password must be at least 8 characters long");
+            return new InputValidationResult(false, "Password must be at least 1 character long");
         }
 
         if (password.Length > 128)
         {
             return new InputValidationResult(false, "Password is too long");
-        }
-
-        // Check for basic password complexity
-        var hasUpper = password.Any(char.IsUpper);
-        var hasLower = password.Any(char.IsLower);
-        var hasDigit = password.Any(char.IsDigit);
-        var hasSpecial = password.Any(ch => !char.IsLetterOrDigit(ch));
-
-        if (!hasUpper || !hasLower || !hasDigit || !hasSpecial)
-        {
-            return new InputValidationResult(false, "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character");
         }
 
         return new InputValidationResult(true);

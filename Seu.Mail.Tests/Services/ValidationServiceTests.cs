@@ -71,9 +71,10 @@ public class ValidationServiceTests
     #region Password Validation Tests
 
     [Test]
+    [Arguments("password", true)]
     [Arguments("Password123!", true)]
+    [Arguments("simple", true)]
     [Arguments("MySecure1@", true)]
-    [Arguments("Complex$Pass1", true)]
     public async Task ValidatePassword_WithValidPasswords_ShouldReturnTrue(string password, bool expected)
     {
         // Act
@@ -86,12 +87,6 @@ public class ValidationServiceTests
     [Test]
     [Arguments("", false)]
     [Arguments(null, false)]
-    [Arguments("short", false)] // Too short
-    [Arguments("nouppercase123!", false)] // No uppercase
-    [Arguments("NOLOWERCASE123!", false)] // No lowercase
-    [Arguments("Password", false)] // No digit, special char
-    [Arguments("Password1", false)] // No special char
-    [Arguments("Password!", false)] // No digit
     public async Task ValidatePassword_WithInvalidPasswords_ShouldReturnFalse(string? password, bool expected)
     {
         // Act
@@ -174,13 +169,13 @@ public class ValidationServiceTests
     }
 
     [Test]
-    public async Task ValidateEmailAccount_WithInvalidPassword_ShouldReturnFalse()
+    public async Task ValidateEmailAccount_WithEmptyPassword_ShouldReturnTrue()
     {
         // Arrange
         var account = new EmailAccount
         {
             Email = "test@example.com",
-            Password = "weak", // This password doesn't meet complexity requirements
+            Password = "", // Empty password is allowed since passwords are managed on server
             ImapServer = "imap.gmail.com",
             ImapPort = 993,
             SmtpServer = "smtp.gmail.com",
@@ -191,8 +186,7 @@ public class ValidationServiceTests
         var result = _validationService.ValidateAccountData(account);
 
         // Assert
-        await Assert.That(result.IsValid).IsFalse();
-        await Assert.That(result.ErrorMessage).IsNotEmpty();
+        await Assert.That(result.IsValid).IsTrue();
     }
 
     [Test]
@@ -401,10 +395,10 @@ public class ValidationServiceTests
     }
 
     [Test]
-    public async Task ValidatePassword_WithScriptInjectionAttempts_ShouldRejectMaliciousInput()
+    public async Task ValidatePassword_WithScriptInjectionAttempts_ShouldAcceptAnyNonEmptyPassword()
     {
-        // Arrange - Script injection attempts
-        var maliciousPasswords = new[]
+        // Arrange - Script injection attempts (now accepted since we don't validate strength)
+        var passwords = new[]
         {
             "<script>alert('xss')</script>",
             "javascript:alert('xss')",
@@ -413,14 +407,13 @@ public class ValidationServiceTests
             "<?php system($_GET['cmd']); ?>"
         };
 
-        foreach (var password in maliciousPasswords)
+        foreach (var password in passwords)
         {
             // Act
             var result = _validationService.ValidatePassword(password);
 
-            // Assert - Should be invalid due to malicious content or password complexity
-            await Assert.That(result.IsValid).IsFalse();
-            await Assert.That(result.ErrorMessage).IsNotEmpty();
+            // Assert - Should be valid since we only check for non-empty and length limits
+            await Assert.That(result.IsValid).IsTrue();
         }
     }
 
