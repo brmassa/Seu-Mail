@@ -4,6 +4,7 @@
 @inject IEmailProviderDetectionService ProviderDetectionService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@using Seu.Mail.Core.Enums
 
 <PageTitle>Manage Accounts - seu</PageTitle>
 
@@ -661,8 +662,17 @@
         try
         {
             ShowToast("Info", "Syncing emails...");
-            await EmailService.SyncEmailsAsync(account);
-            ShowToast("Success", "Account synced successfully!");
+            var syncResult = await EmailService.SyncEmailsAsync(account);
+
+            if (syncResult.Status == EmailSyncStatus.Success)
+            {
+                ShowToast("Success", $"Account synced successfully! {syncResult.NewEmailsCount} new emails downloaded.");
+            }
+            else
+            {
+                ShowToast("Error", $"Sync failed: {syncResult.ErrorMessage}");
+            }
+
             await LoadAccounts();
         }
         catch (Exception ex)
