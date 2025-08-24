@@ -31,7 +31,7 @@
                     Inbox
                     @if (emails.Any())
                     {
-                        <span class="badge bg-secondary ms-2">@emails.Count</span>
+                        <span class="badge bg-primary ms-2">@UnreadCount</span>
                     }
                 </h4>
             </div>
@@ -122,6 +122,8 @@
     private int currentPage = 1;
     private int pageSize = 50;
     private UserSettings userSettings = new();
+
+    private int UnreadCount => emails.Count(e => !e.IsRead);
 
     protected override async Task OnInitializedAsync()
     {
@@ -286,7 +288,7 @@
                     await EmailService.MarkAsReadAsync(emailId);
                 }
                 email.IsRead = !email.IsRead;
-                StateHasChanged();
+                StateHasChanged(); // This will update the unread counter immediately
             }
         }
         catch (Exception ex)
@@ -395,7 +397,7 @@
                 if (email != null) email.IsRead = true;
             }
             selectedEmails.Clear();
-            StateHasChanged();
+            StateHasChanged(); // This will update the unread counter immediately
         }
         catch (Exception ex)
         {
@@ -414,7 +416,7 @@
                 if (email != null) email.IsRead = false;
             }
             selectedEmails.Clear();
-            StateHasChanged();
+            StateHasChanged(); // This will update the unread counter immediately
         }
         catch (Exception ex)
         {

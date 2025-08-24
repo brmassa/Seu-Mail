@@ -35,6 +35,13 @@ public interface IEmailService
     Task<EmailMessage?> GetEmailByIdAsync(int emailId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Deletes all emails for a given account.
+    /// </summary>
+    /// <param name="accountId">The account ID.</param>
+    /// <returns>A task that completes when all emails are deleted.</returns>
+    Task DeleteAllEmailsForAccountAsync(int accountId);
+
+    /// <summary>
     /// Retrieves a specific email by its server UID and account
     /// </summary>
     /// <param name="account">Email account</param>

@@ -22,6 +22,18 @@ public class EmailService : IEmailService
     private readonly IEncryptionService _encryptionService;
 
     /// <summary>
+    /// Deletes all emails for a given account.
+    /// </summary>
+    /// <param name="accountId">The account ID.</param>
+    /// <returns>A task that completes when all emails are deleted.</returns>
+    public async Task DeleteAllEmailsForAccountAsync(int accountId)
+    {
+        var emails = _context.EmailMessages.Where(e => e.AccountId == accountId);
+        _context.EmailMessages.RemoveRange(emails);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="EmailService"/> class.
     /// </summary>
     /// <param name="context">The database context for email data.</param>
@@ -719,6 +731,11 @@ public class EmailService : IEmailService
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
                             };
+
+                            // Fetch the full message to get body content
+                            var fullMessage = await mailFolder.GetMessageAsync(message.UniqueId, cancellationToken);
+                            emailMessage.TextBody = fullMessage.TextBody;
+                            emailMessage.HtmlBody = fullMessage.HtmlBody;
 
                             _context.EmailMessages.Add(emailMessage);
                             newEmails++;

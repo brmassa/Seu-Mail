@@ -118,6 +118,16 @@
                                                 Set Default
                                             </button>
                                         }
+                                        <button class="btn btn-outline-secondary btn-sm mb-1"
+                                                @onclick="() => EditAccount(account)">
+                                            <i class="fas fa-edit"></i>
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm mb-1"
+                                                @onclick="() => SyncFolders(account)">
+                                            <i class="fas fa-folder-open"></i>
+                                            Folders
+                                        </button>
                                         <button class="btn btn-outline-primary btn-sm mb-1"
                                                 @onclick="() => TestConnection(account)">
                                             <i class="fas fa-plug"></i>
@@ -128,15 +138,15 @@
                                             <i class="fas fa-sync-alt"></i>
                                             Sync
                                         </button>
-                                        <button class="btn btn-outline-warning btn-sm mb-1"
-                                                @onclick="() => SyncFolders(account)">
-                                            <i class="fas fa-folder-open"></i>
-                                            Folders
+                                        <button class="btn btn-outline-danger btn-sm mb-1"
+                                                @onclick="() => ForceResyncAccount(account)">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            Force Resync
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm mb-1"
-                                                @onclick="() => EditAccount(account)">
-                                            <i class="fas fa-edit"></i>
-                                            Edit
+                                        <button class="btn btn-outline-danger btn-sm mb-1"
+                                                @onclick="() => ResetAccountEmails(account)">
+                                            <i class="fas fa-trash-alt"></i>
+                                            Reset (Delete All Emails)
                                         </button>
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @onclick="() => DeleteAccount(account)">
@@ -454,6 +464,36 @@
         catch (Exception)
         {
             ShowToast("Warning", "Could not load provider configurations.");
+        }
+    }
+
+    private async Task ForceResyncAccount(EmailAccount account)
+    {
+        // Delete all emails for this account, then sync
+        try
+        {
+            await EmailService.DeleteAllEmailsForAccountAsync(account.Id);
+            ShowToast("Info", $"All emails for {account.Email} deleted. Starting resync...");
+            await EmailService.SyncEmailsAsync(account);
+            ShowToast("Success", $"Resync complete for {account.Email}.");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Force resync failed: {ex.Message}");
+        }
+    }
+
+    private async Task ResetAccountEmails(EmailAccount account)
+    {
+        // Delete all emails for this account only
+        try
+        {
+            await EmailService.DeleteAllEmailsForAccountAsync(account.Id);
+            ShowToast("Info", $"All emails for {account.Email} deleted.");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Error", $"Reset failed: {ex.Message}");
         }
     }
 
