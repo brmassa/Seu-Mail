@@ -10,6 +10,13 @@ body {
     font-size: 0.875rem; /* Reduced from default 1rem */
 }
 
+/* Highlight for right-clicked/context menu email item */
+.context-highlight {
+    background-color: #e9f5ff !important;
+    box-shadow: 0 0 0 2px #007bff33;
+    transition: background-color 0.2s;
+}
+
 /* Error UI */
 #blazor-error-ui {
     background: lightyellow;

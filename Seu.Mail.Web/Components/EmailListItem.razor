@@ -3,7 +3,7 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<div class="email-item @(Email.IsRead ? "read" : "unread") @(IsSelected ? "selected" : "") @(IsCompact ? "compact" : "")"
+<div class="email-item @(Email.IsRead ? "read" : "unread") @(IsSelected ? "selected" : "") @(IsCompact ? "compact" : "") @(showContextMenu ? "context-highlight" : "")"
      @onclick="HandleClick"
      @oncontextmenu="HandleRightClick"
      @oncontextmenu:preventDefault="true"
@@ -22,8 +22,14 @@
             <div class="email-sender">
                 @if (DisplayMode == EmailDisplayMode.TitleSender || DisplayMode == EmailDisplayMode.TitleSenderPreview)
                 {
-                    <strong class="sender-name">@GetSenderName(Email.From)</strong>
-                    <span class="sender-email text-muted ms-1">@GetSenderEmail(Email.From)</span>
+                    @if (!string.IsNullOrWhiteSpace(GetSenderName(Email.From)) && GetSenderName(Email.From) != GetSenderEmail(Email.From))
+                    {
+                        <span class="sender-name">@GetSenderName(Email.From)</span>
+                    }
+                    else
+                    {
+                        <span class="sender-email">@GetSenderEmail(Email.From)</span>
+                    }
                 }
             </div>
             <div class="email-meta text-muted">
@@ -39,7 +45,7 @@
             </div>
         </div>
 
-        <div class="email-subject @(IsCompact ? "mb-1" : "")">
+        <div class="email-subject @(IsCompact ? "mb-1" : "")" style="font-weight:@(Email.IsRead ? "normal" : "bold")">
             @HtmlUtilityService.StripHtml(Email.Subject)
         </div>
 
@@ -155,6 +161,7 @@
     [Parameter] public EventCallback<int> OnForward { get; set; }
     [Parameter] public EventCallback<int> OnOpen { get; set; }
     [Parameter] public EventCallback<int> OnOpenNewWindow { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
 
     [Inject] private IHtmlUtilityService HtmlUtilityService { get; set; } = null!;
     [Inject] private NavigationManager Navigation { get; set; } = null!;
@@ -176,17 +183,20 @@
         else
         {
             await OnEmailClick.InvokeAsync(Email.Id);
+            await RefreshEmailList();
         }
     }
 
     private async Task HandleEmailClick()
     {
         await OnEmailClick.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private async Task HandleSelectionChange(ChangeEventArgs e)
     {
         await OnSelectionChanged.InvokeAsync(Email.Id);
+        // No refresh here; selection is not an action.
     }
 
     private async Task HandleRightClick(MouseEventArgs e)
@@ -216,30 +226,35 @@
     {
         CloseContextMenu();
         await OnReply.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private async Task HandleReplyAll()
     {
         CloseContextMenu();
         await OnReplyAll.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private async Task HandleForward()
     {
         CloseContextMenu();
         await OnForward.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private async Task HandleOpen()
     {
         CloseContextMenu();
         await OnOpen.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private async Task HandleOpenNewWindow()
     {
         CloseContextMenu();
         await OnOpenNewWindow.InvokeAsync(Email.Id);
+        await RefreshEmailList();
     }
 
     private string GetSenderName(string from)
@@ -312,5 +327,13 @@
     {
         // Clean up event listeners using JavaScript utilities
         JSRuntime.InvokeVoidAsync("emailListUtils.removeContextMenuListener");
+    }
+
+    private async Task RefreshEmailList()
+    {
+        if (OnRefresh.HasDelegate)
+        {
+            await OnRefresh.InvokeAsync(null);
+        }
     }
 }
