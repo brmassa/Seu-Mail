@@ -36,6 +36,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seu.Mail.Tests", "Seu.Mail.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seu.Mail.Web", "Seu.Mail.Web\Seu.Mail.Web.csproj", "{05C6963E-9A5D-4C15-92D3-1221A7569C43}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seu.Mail.Search", "Seu.Mail.Search\Seu.Mail.Search.csproj", "{A1B2C3D4-E5F6-7890-ABCD-1234567890EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seu.Mail.Search.Tests", "Seu.Mail.Search.Tests\Seu.Mail.Search.Tests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-234567890123}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,6 +88,14 @@ Global
 		{05C6963E-9A5D-4C15-92D3-1221A7569C43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05C6963E-9A5D-4C15-92D3-1221A7569C43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05C6963E-9A5D-4C15-92D3-1221A7569C43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-1234567890EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-1234567890EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-1234567890EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-1234567890EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-234567890123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-234567890123}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-234567890123}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-234567890123}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 
 	GlobalSection(SolutionProperties) = preSolution

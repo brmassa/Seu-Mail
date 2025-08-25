@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Seu.Mail.Data.Context;
 using Seu.Mail.Services.Extensions;
+using Seu.Mail.Search.Extensions;
 using Seu.Mail.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,15 @@ builder.Services.AddDbContext<EmailDbContext>(options =>
 
 // Add all email services using extension method
 builder.Services.AddEmailServices(builder.Configuration);
+
+// Add email search services
+builder.Services.AddEmailSearch(options =>
+{
+    options.DefaultMaxResults = 50;
+    options.MaxAllowedResults = 1000;
+    options.EnableRelevanceScoring = true;
+    options.EnableSearchSuggestions = true;
+});
 
 // Add calendar module
 builder.Services.AddCalendarModule();
