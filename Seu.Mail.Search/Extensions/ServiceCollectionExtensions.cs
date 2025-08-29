@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         // Configure options
         var options = new EmailSearchOptions();
         configureOptions?.Invoke(options);
+        options.Validate(); // Validate configuration
         services.AddSingleton(options);
 
         // Register search services
@@ -44,6 +45,7 @@ public static class ServiceCollectionExtensions
         // Configure options
         var options = new EmailSearchOptions();
         configureOptions?.Invoke(options);
+        options.Validate(); // Validate configuration
         services.AddSingleton(options);
 
         // Register search services with custom repository

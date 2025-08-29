@@ -4,6 +4,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
 using Seu.Mail.Data.Context;
 using Seu.Mail.Core.Models;
@@ -20,6 +21,7 @@ public class EmailService : IEmailService
     private readonly EmailDbContext _context;
     private readonly ILogger<EmailService> _logger;
     private readonly IEncryptionService _encryptionService;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Deletes all emails for a given account.
@@ -39,11 +41,13 @@ public class EmailService : IEmailService
     /// <param name="context">The database context for email data.</param>
     /// <param name="logger">Logger for email events and errors.</param>
     /// <param name="encryptionService">Encryption service for secure data handling.</param>
-    public EmailService(EmailDbContext context, ILogger<EmailService> logger, IEncryptionService encryptionService)
+    /// <param name="serviceProvider">Service provider for resolving dependencies.</param>
+    public EmailService(EmailDbContext context, ILogger<EmailService> logger, IEncryptionService encryptionService, IServiceProvider serviceProvider)
     {
         _context = context;
         _logger = logger;
         _encryptionService = encryptionService;
+        _serviceProvider = serviceProvider;
     }
 
     // Events
@@ -928,6 +932,33 @@ public class EmailService : IEmailService
     {
         try
         {
+            // Convert basic search criteria to advanced search criteria
+            var advancedCriteria = new Seu.Mail.Search.Models.EmailSearchCriteria
+            {
+                Keyword = criteria.Query,
+                From = criteria.From,
+                To = criteria.To,
+                Subject = criteria.Subject,
+                FolderName = criteria.FolderName,
+                After = criteria.DateFrom,
+                Before = criteria.DateTo,
+                IsRead = criteria.IsRead,
+                IsImportant = criteria.IsImportant,
+                AccountId = criteria.AccountId,
+                MaxResults = criteria.MaxResults,
+                Offset = criteria.Offset,
+                HasAttachment = criteria.HasAttachments
+            };
+
+            // Use the advanced search service if available
+            var searchService = _serviceProvider.GetService<Seu.Mail.Search.Services.EmailSearchService>();
+            if (searchService != null)
+            {
+                var searchResult = await searchService.SearchAsync(advancedCriteria, cancellationToken);
+                return searchResult.Emails;
+            }
+
+            // Fallback to basic search if advanced service is not available
             var query = _context.EmailMessages.AsQueryable();
 
             if (criteria.AccountId.HasValue)
@@ -936,13 +967,14 @@ public class EmailService : IEmailService
             if (!string.IsNullOrEmpty(criteria.Query))
                 query = query.Where(e =>
                     (e.Subject != null && criteria.Query != null && e.Subject.Contains(criteria.Query)) ||
-                    (e.Body != null && criteria.Query != null && e.Body.Contains(criteria.Query)));
+                    (e.TextBody != null && criteria.Query != null && e.TextBody.Contains(criteria.Query)) ||
+                    (e.HtmlBody != null && criteria.Query != null && e.HtmlBody.Contains(criteria.Query)));
 
             if (!string.IsNullOrEmpty(criteria.From))
-                query = query.Where(e => e.FromAddress.Contains(criteria.From));
+                query = query.Where(e => e.From.Contains(criteria.From));
 
             if (!string.IsNullOrEmpty(criteria.To))
-                query = query.Where(e => e.ToAddress.Contains(criteria.To));
+                query = query.Where(e => e.To.Contains(criteria.To));
 
             if (!string.IsNullOrEmpty(criteria.Subject))
                 query = query.Where(e => e.Subject.Contains(criteria.Subject));
@@ -961,6 +993,9 @@ public class EmailService : IEmailService
 
             if (criteria.IsImportant.HasValue)
                 query = query.Where(e => e.IsImportant == criteria.IsImportant.Value);
+
+            if (criteria.HasAttachments.HasValue)
+                query = query.Where(e => e.HasAttachments == criteria.HasAttachments.Value);
 
             return await query
                 .Skip(criteria.Offset)
@@ -987,14 +1022,39 @@ public class EmailService : IEmailService
     public async Task<List<EmailMessage>> SearchEmailsAsync(string query, int? accountId = null, string? folder = null,
         int maxResults = 50, CancellationToken cancellationToken = default)
     {
-        var criteria = new EmailSearchCriteria
+        try
         {
-            Query = query,
-            AccountId = accountId,
-            FolderName = folder,
-            MaxResults = maxResults
-        };
-        return await SearchEmailsAsync(criteria, cancellationToken);
+            // Use the advanced search service directly for Gmail-like query parsing
+            var searchService = _serviceProvider.GetService<Seu.Mail.Search.Services.EmailSearchService>();
+            if (searchService != null)
+            {
+                var searchResult = await searchService.SearchAsync(query, cancellationToken);
+
+                // Apply additional filters if specified
+                var emails = searchResult.Emails;
+                if (accountId.HasValue)
+                    emails = emails.Where(e => e.AccountId == accountId.Value).ToList();
+                if (!string.IsNullOrEmpty(folder))
+                    emails = emails.Where(e => e.Folder == folder).ToList();
+
+                return emails.Take(maxResults).ToList();
+            }
+
+            // Fallback to basic criteria-based search
+            var criteria = new EmailSearchCriteria
+            {
+                Query = query,
+                AccountId = accountId,
+                FolderName = folder,
+                MaxResults = maxResults
+            };
+            return await SearchEmailsAsync(criteria, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching emails with query: {Query}", query);
+            return new List<EmailMessage>();
+        }
     }
 
     // Attachment methods

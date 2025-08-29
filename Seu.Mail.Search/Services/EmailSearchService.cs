@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Seu.Mail.Core.Models;
 using Seu.Mail.Search.Models;
+using ZLinq;
 
 namespace Seu.Mail.Search.Services;
 
@@ -17,15 +18,18 @@ public class EmailSearchService
     private readonly IEmailRepository _repository;
     private readonly EmailSearchQueryParser _queryParser;
     private readonly ILogger<EmailSearchService> _logger;
+    private readonly EmailSearchOptions _options;
 
     public EmailSearchService(
         IEmailRepository repository,
         EmailSearchQueryParser queryParser,
-        ILogger<EmailSearchService> logger)
+        ILogger<EmailSearchService> logger,
+        EmailSearchOptions options)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _queryParser = queryParser ?? throw new ArgumentNullException(nameof(queryParser));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>
@@ -36,13 +40,35 @@ public class EmailSearchService
     /// <returns>Matching emails with relevance scoring</returns>
     public async Task<EmailSearchResult> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(query))
+        if (string.IsNullOrWhiteSpace(query) || query.Length < _options.MinimumQueryLength)
             return new EmailSearchResult { Emails = new List<EmailMessage>(), TotalCount = 0 };
 
-        var criteria = _queryParser.Parse(query);
-        criteria = _queryParser.Normalize(criteria);
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.SearchTimeoutSeconds));
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
-        return await SearchAsync(criteria, cancellationToken);
+        try
+        {
+            var criteria = _queryParser.Parse(query);
+            criteria = _queryParser.Normalize(criteria);
+            
+            // Apply default options
+            if (criteria.MaxResults <= 0)
+                criteria.MaxResults = _options.DefaultMaxResults;
+            
+            criteria.MaxResults = Math.Min(criteria.MaxResults, _options.MaxAllowedResults);
+
+            return await SearchAsync(criteria, combinedCts.Token);
+        }
+        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested)
+        {
+            _logger.LogWarning("Search query timed out: {Query}", query);
+            return new EmailSearchResult 
+            { 
+                Emails = new List<EmailMessage>(), 
+                TotalCount = 0, 
+                IsSuccess = false 
+            };
+        }
     }
 
     /// <summary>
