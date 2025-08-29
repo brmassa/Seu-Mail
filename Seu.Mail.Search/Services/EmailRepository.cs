@@ -25,6 +25,15 @@ public class EmailRepository : IEmailRepository
     }
 
     /// <inheritdoc />
+    public IQueryable<EmailMessage> GetEmailsQuery()
+    {
+        return _context.EmailMessages
+            .Include(e => e.Attachments)
+            .Include(e => e.Account)
+            .Where(e => !e.IsDeleted);
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<EmailMessage>> GetEmailsAsync(CancellationToken cancellationToken = default)
     {
         try

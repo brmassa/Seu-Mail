@@ -43,6 +43,7 @@
         <ProjectReference Include="..\Seu.Mail.Data\Seu.Mail.Data.csproj"/>
         <ProjectReference Include="..\Seu.Mail.Calendar\Seu.Mail.Calendar.csproj"/>
         <ProjectReference Include="..\Seu.Mail.Shared\Seu.Mail.Shared.csproj"/>
+        <ProjectReference Include="..\Seu.Mail.Search\Seu.Mail.Search.csproj"/>
     </ItemGroup>
 
 </Project>

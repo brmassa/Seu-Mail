@@ -1,425 +1,432 @@
 @page "/search"
-@inject IEmailService EmailService
+@using Seu.Mail.Core.Models
+@using Seu.Mail.Search.Models
+@using Seu.Mail.Search.Services
+@using SearchCriteria = Seu.Mail.Search.Models.EmailSearchCriteria
+@inject IEmailSearchService SearchService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
-@using Seu.Mail.Core.Models
-@using Seu.Mail.Contracts.Services
-@using Microsoft.AspNetCore.Components
 
-<PageTitle>Search Results - Seu Email</PageTitle>
+<PageTitle>Search Results</PageTitle>
 
-<div class="container-fluid h-100">
-    <div class="row h-100">
+<div class="container-fluid">
+    <div class="row">
         <div class="col-12">
-            <!-- Search Header -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex align-items-center">
-                    <h4 class="mb-0 me-3">Search Results</h4>
-                    @if (!string.IsNullOrEmpty(SearchQuery))
-                    {
-                        <span class="badge bg-info">@SearchQuery</span>
-                    }
-                    @if (TotalResults > 0)
-                    {
-                        <small class="text-muted ms-3">@TotalResults results found</small>
-                    }
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary btn-sm" @onclick="ShowAdvancedSearch">
-                        <i class="fas fa-sliders-h me-1"></i> Advanced
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="ClearSearch">
-                        <i class="fas fa-times me-1"></i> Clear
-                    </button>
-                </div>
-            </div>
+            <h2 class="mb-4">
+                <i class="fas fa-search me-2"></i>
+                Search Results
+                @if (SearchResult != null && !string.IsNullOrEmpty(Query))
+                {
+                    <small class="text-muted">for "@Query"</small>
+                }
+            </h2>
 
-            <!-- Advanced Search Panel -->
-            @if (ShowAdvanced)
-            {
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h6 class="mb-0">Advanced Search</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">From</label>
-                                    <input type="text" class="form-control" @bind="AdvancedCriteria.From" placeholder="sender@example.com">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">To</label>
-                                    <input type="text" class="form-control" @bind="AdvancedCriteria.To" placeholder="recipient@example.com">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Subject</label>
-                                    <input type="text" class="form-control" @bind="AdvancedCriteria.Subject" placeholder="Subject contains...">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Date From</label>
-                                    <input type="date" class="form-control" @bind="DateFromInput" @bind:format="yyyy-MM-dd">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Date To</label>
-                                    <input type="date" class="form-control" @bind="DateToInput" @bind:format="yyyy-MM-dd">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Folder</label>
-                                    <select class="form-select" @bind="AdvancedCriteria.FolderName">
-                                        <option value="">All Folders</option>
-                                        <option value="INBOX">Inbox</option>
-                                        <option value="SENT">Sent</option>
-                                        <option value="DRAFTS">Drafts</option>
-                                        <option value="TRASH">Trash</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" @bind="HasAttachmentsFilter" id="hasAttachments">
-                                    <label class="form-check-label" for="hasAttachments">Has Attachments</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" @bind="UnreadOnlyFilter" id="unreadOnly">
-                                    <label class="form-check-label" for="unreadOnly">Unread Only</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" @bind="ImportantOnlyFilter" id="importantOnly">
-                                    <label class="form-check-label" for="importantOnly">Important Only</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <button class="btn btn-primary me-2" @onclick="ExecuteAdvancedSearch">
-                                <i class="fas fa-search me-1"></i> Search
-                            </button>
-                            <button class="btn btn-secondary" @onclick="ResetAdvancedSearch">
-                                <i class="fas fa-undo me-1"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-
-            <!-- Loading State -->
             @if (IsLoading)
             {
-                <div class="text-center py-5">
+                <div class="d-flex justify-content-center py-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Searching...</span>
                     </div>
-                    <p class="mt-2 text-muted">Searching emails...</p>
+                    <span class="ms-2">Searching emails...</span>
                 </div>
             }
-            else if (EmailResults.Any())
+            else if (SearchResult != null)
             {
-                <!-- Results List -->
-                <div class="email-list">
-                    @foreach (var email in EmailResults)
-                    {
-                        <div class="email-item border rounded mb-2 p-3 @(email.IsRead ? "" : "bg-light border-primary")"
-                             style="cursor: pointer;" @onclick="() => OpenEmail(email.Id)">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <div class="d-flex align-items-center">
-                                            <strong class="@(email.IsRead ? "text-dark" : "text-primary fw-bold")">
-                                                @GetSenderName(email.From)
-                                            </strong>
-                                            @if (email.HasAttachments)
-                                            {
-                                                <i class="fas fa-paperclip ms-2 text-muted"></i>
-                                            }
-                                            @if (email.IsImportant)
-                                            {
-                                                <i class="fas fa-star ms-2 text-warning"></i>
-                                            }
-                                        </div>
-                                        <small class="text-muted">
-                                            @email.DateReceived.ToString("MMM dd, yyyy HH:mm")
-                                        </small>
-                                    </div>
-                                    <div class="@(email.IsRead ? "text-dark" : "text-primary fw-bold") mb-1">
-                                        @email.Subject
-                                    </div>
-                                    <div class="text-muted small">
-                                        @GetEmailPreview(email)
-                                    </div>
-                                    <div class="mt-2">
-                                        <span class="badge bg-secondary me-1">@email.Folder</span>
-                                        @if (email.Size > 0)
-                                        {
-                                            <span class="badge bg-info me-1">@FormatFileSize(email.Size)</span>
-                                        }
-                                    </div>
+                @if (!string.IsNullOrEmpty(SearchResult.Error))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Search Error:</strong> @SearchResult.Error
+                    </div>
+                }
+                else
+                {
+                    <!-- Search Results Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="search-summary">
+                                <p class="mb-1">
+                                    <strong>@SearchResult.TotalCount</strong> results found
+                                    @if (SearchResult.ExecutionTimeMs > 0)
+                                    {
+                                        <span class="text-muted">in @SearchResult.ExecutionTimeMs ms</span>
+                                    }
+                                </p>
+                                @if (SearchResult.TotalCount > SearchResult.Emails.Count)
+                                {
+                                    <small class="text-muted">
+                                        Showing @SearchResult.Emails.Count of @SearchResult.TotalCount results
+                                        (Page @SearchResult.CurrentPage of @SearchResult.TotalPages)
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            @if (SearchResult.TotalCount > 0)
+                            {
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                            data-bs-toggle="dropdown">
+                                        Sort: @GetSortDisplayName()
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.DateDescending)">
+                                            Date (Newest First)</a></li>
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.DateAscending)">
+                                            Date (Oldest First)</a></li>
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.SenderAscending)">
+                                            Sender (A-Z)</a></li>
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.SubjectAscending)">
+                                            Subject (A-Z)</a></li>
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.SizeDescending)">
+                                            Size (Largest First)</a></li>
+                                        <li><a class="dropdown-item" href="#" @onclick="() => ChangeSorting(SearchSortOrder.Relevance)">
+                                            Relevance</a></li>
+                                    </ul>
                                 </div>
+                            }
+                        </div>
+                    </div>
+
+                    @if (SearchResult.TotalCount == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No emails found</h4>
+                            <p class="text-muted mb-4">
+                                Try adjusting your search terms or using different filters.
+                            </p>
+                            <div class="search-suggestions">
+                                <h6>Search tips:</h6>
+                                <ul class="list-unstyled text-start d-inline-block">
+                                    <li><code>from:alice@example.com</code> - emails from specific sender</li>
+                                    <li><code>subject:meeting</code> - emails with "meeting" in subject</li>
+                                    <li><code>has:attachment</code> - emails with attachments</li>
+                                    <li><code>larger:1MB</code> - emails larger than 1MB</li>
+                                    <li><code>after:2024-01-01</code> - emails after specific date</li>
+                                </ul>
                             </div>
                         </div>
                     }
-                </div>
-
-                <!-- Pagination -->
-                @if (TotalResults > PageSize)
-                {
-                    <nav class="mt-4">
-                        <ul class="pagination justify-content-center">
-                            <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" @onclick="() => NavigateToPage(CurrentPage - 1)" href="#">Previous</a>
-                            </li>
-
-                            @for (int i = Math.Max(1, CurrentPage - 2); i <= Math.Min(TotalPages, CurrentPage + 2); i++)
+                    else
+                    {
+                        <!-- Email Results -->
+                        <div class="email-list">
+                            @foreach (var email in SearchResult.Emails)
                             {
-                                <li class="page-item @(i == CurrentPage ? "active" : "")">
-                                    <a class="page-link" @onclick="() => NavigateToPage(i)" href="#">@i</a>
-                                </li>
+                                <div class="email-item border rounded mb-3 p-3 @(email.IsRead ? "" : "unread")">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="email-header">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <strong class="sender me-2">@email.From</strong>
+                                                    @if (email.IsImportant)
+                                                    {
+                                                        <span class="badge bg-warning text-dark me-2">
+                                                            <i class="fas fa-star"></i> Important
+                                                        </span>
+                                                    }
+                                                    @if (email.HasAttachments)
+                                                    {
+                                                        <span class="badge bg-secondary me-2">
+                                                            <i class="fas fa-paperclip"></i> @email.Attachments.Count
+                                                        </span>
+                                                    }
+                                                    @if (!email.IsRead)
+                                                    {
+                                                        <span class="badge bg-primary">New</span>
+                                                    }
+                                                </div>
+                                                <h6 class="email-subject mb-2">
+                                                    <a href="/email/@email.Id" class="text-decoration-none">
+                                                        @email.Subject
+                                                    </a>
+                                                </h6>
+                                                <p class="email-preview text-muted mb-0">
+                                                    @(TruncateText(email.TextBody ?? "", 200))
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <div class="email-meta">
+                                                <small class="text-muted d-block">
+                                                    @email.DateReceived.ToString("MMM dd, yyyy")
+                                                </small>
+                                                <small class="text-muted d-block">
+                                                    @email.DateReceived.ToString("HH:mm")
+                                                </small>
+                                                @if (email.Size > 0)
+                                                {
+                                                    <small class="text-muted d-block">
+                                                        @FormatFileSize(email.Size)
+                                                    </small>
+                                                }
+                                                <small class="text-muted d-block">
+                                                    @email.Folder
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             }
+                        </div>
 
-                            <li class="page-item @(CurrentPage >= TotalPages ? "disabled" : "")">
-                                <a class="page-link" @onclick="() => NavigateToPage(CurrentPage + 1)" href="#">Next</a>
-                            </li>
-                        </ul>
-                    </nav>
+                        <!-- Pagination -->
+                        @if (SearchResult.TotalPages > 1)
+                        {
+                            <nav aria-label="Search results pagination">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item @(SearchResult.CurrentPage <= 1 ? "disabled" : "")">
+                                        <a class="page-link" href="#" @onclick="() => GoToPage(SearchResult.CurrentPage - 1)">
+                                            <i class="fas fa-chevron-left"></i> Previous
+                                        </a>
+                                    </li>
+
+                                    @for (int i = Math.Max(1, SearchResult.CurrentPage - 2);
+                                          i <= Math.Min(SearchResult.TotalPages, SearchResult.CurrentPage + 2); i++)
+                                    {
+                                        <li class="page-item @(i == SearchResult.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="#" @onclick="() => GoToPage(i)">@i</a>
+                                        </li>
+                                    }
+
+                                    <li class="page-item @(SearchResult.CurrentPage >= SearchResult.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="#" @onclick="() => GoToPage(SearchResult.CurrentPage + 1)">
+                                            Next <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    }
                 }
             }
-            else if (!IsLoading && SearchExecuted)
+            else if (!string.IsNullOrEmpty(Query))
             {
-                <!-- No Results -->
-                <div class="text-center py-5">
-                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No emails found</h5>
-                    <p class="text-muted">
-                        @if (!string.IsNullOrEmpty(SearchQuery))
-                        {
-                            <span>No results found for "<strong>@SearchQuery</strong>"</span>
-                        }
-                        else
-                        {
-                            <span>Try adjusting your search criteria.</span>
-                        }
-                    </p>
-                    <button class="btn btn-outline-primary" @onclick="ShowAdvancedSearch">
-                        Try Advanced Search
-                    </button>
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Enter a search query to find emails.
                 </div>
             }
         </div>
     </div>
 </div>
 
+<style>
+    .unread {
+        background-color: #f8f9ff;
+        border-left: 4px solid #007bff;
+    }
+
+    .email-item:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .email-subject a {
+        color: #333;
+    }
+
+    .email-subject a:hover {
+        color: #007bff;
+    }
+
+    .search-summary {
+        font-size: 0.9rem;
+    }
+
+    .email-preview {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    .email-meta {
+        font-size: 0.8rem;
+    }
+
+    .search-suggestions {
+        text-align: left;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .search-suggestions code {
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.85em;
+    }
+</style>
+
 @code {
-    [Parameter] public string? Query { get; set; }
+    [Parameter, SupplyParameterFromQuery] public string? Query { get; set; }
+    [Parameter, SupplyParameterFromQuery] public int Page { get; set; } = 1;
+    [Parameter, SupplyParameterFromQuery] public string? Sort { get; set; }
 
-    private string SearchQuery = "";
-    private List<EmailMessage> EmailResults = new();
-    private bool IsLoading = false;
-    private bool SearchExecuted = false;
-    private bool ShowAdvanced = false;
-    private int TotalResults = 0;
-    private int CurrentPage = 1;
-    private int PageSize = 25;
-    private int TotalPages = 1;
-
-    // Advanced search criteria
-    private Seu.Mail.Contracts.Services.EmailSearchCriteria AdvancedCriteria = new();
-    private DateTime? DateFromInput;
-    private DateTime? DateToInput;
-    private bool HasAttachmentsFilter = false;
-    private bool UnreadOnlyFilter = false;
-    private bool ImportantOnlyFilter = false;
+    private EmailSearchResult? SearchResult { get; set; }
+    private bool IsLoading { get; set; }
+    private SearchCriteria CurrentCriteria { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Get query parameter from URL
-        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        SearchQuery = query["q"] ?? "";
-
-        if (!string.IsNullOrEmpty(SearchQuery))
+        if (!string.IsNullOrEmpty(Query))
         {
-            await ExecuteSearch();
+            await PerformSearch();
         }
     }
 
-    private async Task ExecuteSearch()
+    protected override async Task OnParametersSetAsync()
     {
-        if (string.IsNullOrWhiteSpace(SearchQuery))
+        if (!string.IsNullOrEmpty(Query))
+        {
+            await PerformSearch();
+        }
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(Query))
             return;
 
         IsLoading = true;
-        SearchExecuted = true;
         StateHasChanged();
 
         try
         {
-            var results = await EmailService.SearchEmailsAsync(SearchQuery, maxResults: PageSize * CurrentPage);
-            EmailResults = results;
-            TotalResults = results.Count;
-            TotalPages = (int)Math.Ceiling((double)TotalResults / PageSize);
-        }
-        catch (Exception ex)
-        {
-            // Handle error
-            Console.WriteLine($"Search error: {ex.Message}");
-            EmailResults = new List<EmailMessage>();
-            TotalResults = 0;
-        }
-        finally
-        {
-            IsLoading = false;
-            StateHasChanged();
-        }
-    }
+            // Parse sort order
+            var sortOrder = ParseSortOrder(Sort);
 
-    private async Task ExecuteAdvancedSearch()
-    {
-        IsLoading = true;
-        SearchExecuted = true;
-        ShowAdvanced = false;
-        StateHasChanged();
-
-        try
-        {
-            // Set up advanced criteria
-            if (DateFromInput.HasValue)
-                AdvancedCriteria.DateFrom = DateFromInput.Value;
-
-            if (DateToInput.HasValue)
-                AdvancedCriteria.DateTo = DateToInput.Value;
-
-            if (HasAttachmentsFilter)
-                AdvancedCriteria.HasAttachments = true;
-
-            if (UnreadOnlyFilter)
-                AdvancedCriteria.IsRead = false;
-
-            if (ImportantOnlyFilter)
-                AdvancedCriteria.IsImportant = true;
-
-            AdvancedCriteria.MaxResults = PageSize;
-            AdvancedCriteria.Offset = (CurrentPage - 1) * PageSize;
-
-            var results = await EmailService.SearchEmailsAsync(AdvancedCriteria);
-            EmailResults = results;
-            TotalResults = results.Count;
-            TotalPages = (int)Math.Ceiling((double)TotalResults / PageSize);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Advanced search error: {ex.Message}");
-            EmailResults = new List<EmailMessage>();
-            TotalResults = 0;
-        }
-        finally
-        {
-            IsLoading = false;
-            StateHasChanged();
-        }
-    }
-
-    private void ShowAdvancedSearch()
-    {
-        ShowAdvanced = !ShowAdvanced;
-    }
-
-    private void ResetAdvancedSearch()
-    {
-        AdvancedCriteria = new Seu.Mail.Contracts.Services.EmailSearchCriteria();
-        DateFromInput = null;
-        DateToInput = null;
-        HasAttachmentsFilter = false;
-        UnreadOnlyFilter = false;
-        ImportantOnlyFilter = false;
-    }
-
-    private void ClearSearch()
-    {
-        SearchQuery = "";
-        EmailResults.Clear();
-        TotalResults = 0;
-        SearchExecuted = false;
-        ResetAdvancedSearch();
-        Navigation.NavigateTo("/search");
-    }
-
-    private void NavigateToPage(int page)
-    {
-        if (page < 1 || page > TotalPages) return;
-
-        CurrentPage = page;
-        InvokeAsync(async () =>
-        {
-            if (!string.IsNullOrEmpty(SearchQuery))
-                await ExecuteSearch();
+            // Check if this is a raw query (Gmail-like syntax) or simple keyword search
+            if (IsAdvancedQuery(Query))
+            {
+                SearchResult = await SearchService.SearchAsync(Query);
+            }
             else
-                await ExecuteAdvancedSearch();
+            {
+                // Simple keyword search
+                var criteria = new SearchCriteria
+                {
+                    Keyword = Query,
+                    MaxResults = 50,
+                    Offset = (Page - 1) * 50,
+                    SortOrder = sortOrder
+                };
+                CurrentCriteria = criteria;
+                SearchResult = await SearchService.SearchAsync(criteria);
+            }
+        }
+        catch (Exception ex)
+        {
+            SearchResult = new EmailSearchResult
+            {
+                Error = $"Search failed: {ex.Message}"
+            };
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool IsAdvancedQuery(string query)
+    {
+        // Check if query contains Gmail-like operators
+        var operators = new[] { "from:", "to:", "subject:", "has:", "is:", "in:", "larger:", "smaller:", "before:", "after:", "filename:" };
+        return operators.Any(op => query.ToLower().Contains(op));
+    }
+
+    private SearchSortOrder ParseSortOrder(string? sort)
+    {
+        return sort?.ToLower() switch
+        {
+            "date-asc" => SearchSortOrder.DateAscending,
+            "date-desc" => SearchSortOrder.DateDescending,
+            "sender-asc" => SearchSortOrder.SenderAscending,
+            "sender-desc" => SearchSortOrder.SenderDescending,
+            "subject-asc" => SearchSortOrder.SubjectAscending,
+            "subject-desc" => SearchSortOrder.SubjectDescending,
+            "size-asc" => SearchSortOrder.SizeAscending,
+            "size-desc" => SearchSortOrder.SizeDescending,
+            "relevance" => SearchSortOrder.Relevance,
+            _ => SearchSortOrder.DateDescending
+        };
+    }
+
+    private string GetSortDisplayName()
+    {
+        var sortOrder = ParseSortOrder(Sort);
+        return sortOrder switch
+        {
+            SearchSortOrder.DateAscending => "Date (Oldest First)",
+            SearchSortOrder.DateDescending => "Date (Newest First)",
+            SearchSortOrder.SenderAscending => "Sender (A-Z)",
+            SearchSortOrder.SenderDescending => "Sender (Z-A)",
+            SearchSortOrder.SubjectAscending => "Subject (A-Z)",
+            SearchSortOrder.SubjectDescending => "Subject (Z-A)",
+            SearchSortOrder.SizeAscending => "Size (Smallest First)",
+            SearchSortOrder.SizeDescending => "Size (Largest First)",
+            SearchSortOrder.Relevance => "Relevance",
+            _ => "Date (Newest First)"
+        };
+    }
+
+    private void ChangeSorting(SearchSortOrder newSort)
+    {
+        var sortParam = newSort switch
+        {
+            SearchSortOrder.DateAscending => "date-asc",
+            SearchSortOrder.DateDescending => "date-desc",
+            SearchSortOrder.SenderAscending => "sender-asc",
+            SearchSortOrder.SenderDescending => "sender-desc",
+            SearchSortOrder.SubjectAscending => "subject-asc",
+            SearchSortOrder.SubjectDescending => "subject-desc",
+            SearchSortOrder.SizeAscending => "size-asc",
+            SearchSortOrder.SizeDescending => "size-desc",
+            SearchSortOrder.Relevance => "relevance",
+            _ => "date-desc"
+        };
+
+        var uri = Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["q"] = Query,
+            ["page"] = 1, // Reset to first page when sorting
+            ["sort"] = sortParam
         });
+
+        Navigation.NavigateTo(uri);
     }
 
-    private void OpenEmail(int emailId)
+    private void GoToPage(int page)
     {
-        Navigation.NavigateTo($"/email/{emailId}");
-    }
+        if (page < 1 || (SearchResult != null && page > SearchResult.TotalPages))
+            return;
 
-    private string GetSenderName(string from)
-    {
-        if (string.IsNullOrEmpty(from)) return "Unknown";
-
-        // Extract name from "Name <email>" format or just return email
-        var match = System.Text.RegularExpressions.Regex.Match(from, @"^(.+?)\s*<.+>$");
-        if (match.Success)
+        var uri = Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
-            return match.Groups[1].Value.Trim().Trim('"');
-        }
-        return from;
+            ["q"] = Query,
+            ["page"] = page,
+            ["sort"] = Sort
+        });
+
+        Navigation.NavigateTo(uri);
     }
 
-    private string GetEmailPreview(EmailMessage email)
+    private string TruncateText(string text, int maxLength)
     {
-        var body = email.TextBody ?? email.HtmlBody ?? "";
+        if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+            return text ?? "";
 
-        // Remove HTML tags if HTML body
-        if (!string.IsNullOrEmpty(email.HtmlBody))
-        {
-            body = System.Text.RegularExpressions.Regex.Replace(body, "<.*?>", "");
-        }
-
-        // Return first 150 characters
-        if (body.Length > 150)
-        {
-            return body.Substring(0, 150) + "...";
-        }
-        return body;
+        return text.Substring(0, maxLength) + "...";
     }
 
-    private string FormatFileSize(long sizeInBytes)
+    private string FormatFileSize(long bytes)
     {
-        if (sizeInBytes < 1024) return $"{sizeInBytes} B";
-        if (sizeInBytes < 1024 * 1024) return $"{sizeInBytes / 1024:F1} KB";
-        if (sizeInBytes < 1024 * 1024 * 1024) return $"{sizeInBytes / (1024 * 1024):F1} MB";
-        return $"{sizeInBytes / (1024 * 1024 * 1024):F1} GB";
+        const int unit = 1024;
+        if (bytes < unit) return $"{bytes} B";
+
+        int exp = (int)(Math.Log(bytes) / Math.Log(unit));
+        string pre = "KMGTPE"[exp - 1].ToString();
+        return $"{bytes / Math.Pow(unit, exp):F1} {pre}B";
     }
 }
-
-<style>
-.email-item {
-    transition: all 0.2s ease;
-}
-
-.email-item:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.pagination .page-link {
-    cursor: pointer;
-}
-
-.badge {
-    font-size: 0.7em;
-}
-</style>

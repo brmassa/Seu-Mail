@@ -10,6 +10,8 @@ using Seu.Mail.Data.Context;
 using Seu.Mail.Core.Models;
 using Seu.Mail.Core.Enums;
 using Seu.Mail.Contracts.Services;
+using Seu.Mail.Search.Models;
+using Seu.Mail.Search.Services;
 
 namespace Seu.Mail.Services;
 
@@ -927,7 +929,7 @@ public class EmailService : IEmailService
     /// <param name="criteria">The search criteria containing filters and parameters.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains matching emails.</returns>
-    public async Task<List<EmailMessage>> SearchEmailsAsync(EmailSearchCriteria criteria,
+    public async Task<List<EmailMessage>> SearchEmailsAsync(Seu.Mail.Contracts.Services.EmailSearchCriteria criteria,
         CancellationToken cancellationToken = default)
     {
         try
@@ -951,7 +953,7 @@ public class EmailService : IEmailService
             };
 
             // Use the advanced search service if available
-            var searchService = _serviceProvider.GetService<Seu.Mail.Search.Services.EmailSearchService>();
+            var searchService = _serviceProvider.GetService<IEmailSearchService>();
             if (searchService != null)
             {
                 var searchResult = await searchService.SearchAsync(advancedCriteria, cancellationToken);
@@ -1025,7 +1027,7 @@ public class EmailService : IEmailService
         try
         {
             // Use the advanced search service directly for Gmail-like query parsing
-            var searchService = _serviceProvider.GetService<Seu.Mail.Search.Services.EmailSearchService>();
+            var searchService = _serviceProvider.GetService<IEmailSearchService>();
             if (searchService != null)
             {
                 var searchResult = await searchService.SearchAsync(query, cancellationToken);
@@ -1041,7 +1043,7 @@ public class EmailService : IEmailService
             }
 
             // Fallback to basic criteria-based search
-            var criteria = new EmailSearchCriteria
+            var criteria = new Seu.Mail.Contracts.Services.EmailSearchCriteria
             {
                 Query = query,
                 AccountId = accountId,

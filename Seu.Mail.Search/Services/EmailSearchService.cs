@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Seu.Mail.Core.Models;
 using Seu.Mail.Search.Models;
@@ -13,512 +14,380 @@ namespace Seu.Mail.Search.Services;
 /// <summary>
 /// Advanced email search service with comprehensive filtering and ranking capabilities
 /// </summary>
-public class EmailSearchService
+public class EmailSearchService : IEmailSearchService
 {
     private readonly IEmailRepository _repository;
     private readonly EmailSearchQueryParser _queryParser;
     private readonly ILogger<EmailSearchService> _logger;
-    private readonly EmailSearchOptions _options;
 
     public EmailSearchService(
         IEmailRepository repository,
         EmailSearchQueryParser queryParser,
-        ILogger<EmailSearchService> logger,
-        EmailSearchOptions options)
+        ILogger<EmailSearchService> logger)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _queryParser = queryParser ?? throw new ArgumentNullException(nameof(queryParser));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _repository = repository;
+        _queryParser = queryParser;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Searches emails using a Gmail-like query string
+    /// Searches emails using advanced criteria
     /// </summary>
-    /// <param name="query">The search query string</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Matching emails with relevance scoring</returns>
-    public async Task<EmailSearchResult> SearchAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<EmailSearchResult> SearchAsync(
+        EmailSearchCriteria criteria,
+        CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(query) || query.Length < _options.MinimumQueryLength)
-            return new EmailSearchResult { Emails = new List<EmailMessage>(), TotalCount = 0 };
-
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.SearchTimeoutSeconds));
-        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = new EmailSearchResult
+        {
+            SearchCriteria = criteria
+        };
 
         try
         {
-            var criteria = _queryParser.Parse(query);
-            criteria = _queryParser.Normalize(criteria);
-            
-            // Apply default options
-            if (criteria.MaxResults <= 0)
-                criteria.MaxResults = _options.DefaultMaxResults;
-            
-            criteria.MaxResults = Math.Min(criteria.MaxResults, _options.MaxAllowedResults);
+            _logger.LogDebug("Starting email search with criteria: {@Criteria}", criteria);
 
-            return await SearchAsync(criteria, combinedCts.Token);
-        }
-        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested)
-        {
-            _logger.LogWarning("Search query timed out: {Query}", query);
-            return new EmailSearchResult 
-            { 
-                Emails = new List<EmailMessage>(), 
-                TotalCount = 0, 
-                IsSuccess = false 
-            };
-        }
-    }
+            var query = _repository.GetEmailsQuery();
 
-    /// <summary>
-    /// Searches emails using structured search criteria
-    /// </summary>
-    /// <param name="criteria">The search criteria</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Matching emails with relevance scoring</returns>
-    public async Task<EmailSearchResult> SearchAsync(EmailSearchCriteria criteria, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            _logger.LogInformation("Executing email search with criteria: {Criteria}", criteria.RawQuery ?? "Advanced search");
+            // Apply filters using ZLinq for performance
+            query = ApplyFilters(query, criteria);
 
-            var emails = await _repository.GetEmailsAsync(cancellationToken);
-            var filteredEmails = ApplyFilters(emails, criteria);
-            var rankedEmails = ApplyRanking(filteredEmails, criteria);
-            var paginatedEmails = ApplyPagination(rankedEmails, criteria);
+            // Get total count before pagination
+            result.TotalCount = await query.CountAsync(cancellationToken);
 
-            var result = new EmailSearchResult
+            // Apply sorting
+            query = ApplySorting(query, criteria);
+
+            // Apply pagination
+            if (criteria.Offset > 0)
             {
-                Emails = paginatedEmails.ToList(),
-                TotalCount = filteredEmails.Count(),
-                SearchCriteria = criteria,
-                ExecutionTimeMs = 0 // TODO: Add timing
-            };
+                query = query.Skip(criteria.Offset);
+            }
 
-            _logger.LogInformation("Search completed. Found {Count} total matches, returning {PageSize} results",
-                result.TotalCount, result.Emails.Count);
+            query = query.Take(criteria.MaxResults);
+
+            // Execute query
+            result.Emails = await query.ToListAsync(cancellationToken);
+
+            stopwatch.Stop();
+            result.ExecutionTimeMs = stopwatch.ElapsedMilliseconds;
+
+            _logger.LogInformation("Search completed: {Count} results in {Ms}ms",
+                result.Emails.Count, result.ExecutionTimeMs);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing email search");
-            return new EmailSearchResult
-            {
-                Emails = new List<EmailMessage>(),
-                TotalCount = 0,
-                SearchCriteria = criteria,
-                Error = ex.Message
-            };
+            stopwatch.Stop();
+            result.ExecutionTimeMs = stopwatch.ElapsedMilliseconds;
+            result.Error = ex.Message;
+
+            _logger.LogError(ex, "Error during email search");
+            return result;
         }
     }
 
     /// <summary>
-    /// Applies all search filters to the email collection
+    /// Searches emails using a raw query string (Gmail-like syntax)
     /// </summary>
-    private IEnumerable<EmailMessage> ApplyFilters(IEnumerable<EmailMessage> emails, EmailSearchCriteria criteria)
+    public async Task<EmailSearchResult> SearchAsync(
+        string rawQuery,
+        CancellationToken cancellationToken = default)
     {
-        var query = emails.AsQueryable();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = new EmailSearchResult();
 
-        // Account filtering
-        if (criteria.AccountId.HasValue)
-            query = query.Where(e => e.AccountId == criteria.AccountId.Value);
-
-        if (criteria.AccountIds?.Any() == true)
-            query = query.Where(e => criteria.AccountIds.Contains(e.AccountId));
-
-        // Folder/Scope filtering
-        query = ApplyFolderFilters(query, criteria);
-
-        // Sender/Recipient filtering
-        query = ApplyParticipantFilters(query, criteria);
-
-        // Content filtering
-        query = ApplyContentFilters(query, criteria);
-
-        // Date filtering
-        query = ApplyDateFilters(query, criteria);
-
-        // Size filtering
-        query = ApplySizeFilters(query, criteria);
-
-        // Status filtering
-        query = ApplyStatusFilters(query, criteria);
-
-        // Attachment filtering
-        query = ApplyAttachmentFilters(query, criteria);
-
-        // Priority filtering
-        if (criteria.Priority.HasValue)
-            query = query.Where(e => e.Priority == criteria.Priority.Value);
-
-        // Thread filtering
-        if (!string.IsNullOrEmpty(criteria.ThreadId))
-            query = query.Where(e => e.ThreadId == criteria.ThreadId);
-
-        // Label/Tag filtering
-        if (criteria.Labels?.Any() == true)
+        try
         {
-            foreach (var label in criteria.Labels)
-            {
-                var labelToSearch = label;
-                query = query.Where(e => e.Labels != null && e.Labels.Contains(labelToSearch));
-            }
+            // Parse the raw query into structured criteria
+            var criteria = _queryParser.Parse(rawQuery);
+            criteria.RawQuery = rawQuery;
+
+            result = await SearchAsync(criteria, cancellationToken);
+            return result;
         }
-
-        return query;
-    }
-
-    /// <summary>
-    /// Applies folder and scope filtering
-    /// </summary>
-    private IQueryable<EmailMessage> ApplyFolderFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
-        // Specific folder name
-        if (!string.IsNullOrEmpty(criteria.FolderName))
-            query = query.Where(e => e.Folder.ToUpper() == criteria.FolderName.ToUpper());
-
-        // Scope-based filtering
-        switch (criteria.Scope)
+        catch (Exception ex)
         {
-            case SearchScope.Inbox:
-                query = query.Where(e => e.Folder.ToUpper() == "INBOX");
-                break;
-            case SearchScope.Sent:
-                query = query.Where(e => e.Folder.ToUpper() == "SENT");
-                break;
-            case SearchScope.Drafts:
-                query = query.Where(e => e.Folder.ToUpper() == "DRAFTS");
-                break;
-            case SearchScope.Trash:
-                query = query.Where(e => e.Folder.ToUpper() == "TRASH");
-                break;
-            case SearchScope.Spam:
-                query = query.Where(e => e.Folder.ToUpper() == "SPAM" || e.IsSpam);
-                break;
-            case SearchScope.Starred:
-                query = query.Where(e => e.IsImportant);
-                break;
-            case SearchScope.Important:
-                query = query.Where(e => e.IsImportant);
-                break;
-            case SearchScope.AllFolders:
-            default:
-                // No folder restriction
-                break;
+            stopwatch.Stop();
+            result.ExecutionTimeMs = stopwatch.ElapsedMilliseconds;
+            result.Error = $"Query parsing failed: {ex.Message}";
+
+            _logger.LogError(ex, "Error parsing search query: {Query}", rawQuery);
+            return result;
         }
-
-        // Include/exclude deleted and spam
-        if (!criteria.IncludeDeleted)
-            query = query.Where(e => !e.IsDeleted);
-
-        if (!criteria.IncludeSpam)
-            query = query.Where(e => !e.IsSpam);
-
-        return query;
     }
 
     /// <summary>
-    /// Applies sender and recipient filtering
+    /// Apply search filters to the query using ZLinq for performance
     /// </summary>
-    private IQueryable<EmailMessage> ApplyParticipantFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
+    private IQueryable<EmailMessage> ApplyFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
     {
-        if (!string.IsNullOrEmpty(criteria.From))
-            query = query.Where(e => e.From.ToLower().Contains(criteria.From.ToLower()));
-
-        if (!string.IsNullOrEmpty(criteria.To))
-            query = query.Where(e => e.To.ToLower().Contains(criteria.To.ToLower()));
-
-        if (!string.IsNullOrEmpty(criteria.Cc))
-            query = query.Where(e => e.Cc != null && e.Cc.ToLower().Contains(criteria.Cc.ToLower()));
-
-        if (!string.IsNullOrEmpty(criteria.Bcc))
-            query = query.Where(e => e.Bcc != null && e.Bcc.ToLower().Contains(criteria.Bcc.ToLower()));
-
-        return query;
-    }
-
-    /// <summary>
-    /// Applies content filtering (subject, body, keywords)
-    /// </summary>
-    private IQueryable<EmailMessage> ApplyContentFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
-        // Exact phrase search (highest priority)
-        if (!string.IsNullOrEmpty(criteria.ExactPhrase))
+        // Text-based filters
+        if (!string.IsNullOrWhiteSpace(criteria.Keyword))
         {
-            var phrase = criteria.ExactPhrase.ToLower();
+            var keyword = criteria.Keyword.ToLower();
             query = query.Where(e =>
-                (e.Subject != null && e.Subject.ToLower().Contains(phrase)) ||
-                (e.TextBody != null && e.TextBody.ToLower().Contains(phrase)) ||
-                (e.HtmlBody != null && e.HtmlBody.ToLower().Contains(phrase)));
+                e.Subject.ToLower().Contains(keyword) ||
+                e.TextBody.ToLower().Contains(keyword) ||
+                e.From.ToLower().Contains(keyword) ||
+                e.To.ToLower().Contains(keyword));
         }
 
-        // Specific subject filtering
-        if (!string.IsNullOrEmpty(criteria.Subject))
-            query = query.Where(e => e.Subject != null && e.Subject.ToLower().Contains(criteria.Subject.ToLower()));
-
-        // Specific body filtering
-        if (!string.IsNullOrEmpty(criteria.Body))
-            query = query.Where(e =>
-                (e.TextBody != null && e.TextBody.ToLower().Contains(criteria.Body.ToLower())) ||
-                (e.HtmlBody != null && e.HtmlBody.ToLower().Contains(criteria.Body.ToLower())));
-
-        // General keyword search (across subject, body, participants)
-        if (!string.IsNullOrEmpty(criteria.Keyword))
+        if (!string.IsNullOrWhiteSpace(criteria.From))
         {
-            var keywords = criteria.Keyword.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var keyword in keywords)
-            {
-                var kw = keyword;
-                query = query.Where(e =>
-                    (e.Subject != null && e.Subject.ToLower().Contains(kw)) ||
-                    (e.TextBody != null && e.TextBody.ToLower().Contains(kw)) ||
-                    (e.HtmlBody != null && e.HtmlBody.ToLower().Contains(kw)) ||
-                    e.From.ToLower().Contains(kw) ||
-                    e.To.ToLower().Contains(kw) ||
-                    (e.Cc != null && e.Cc.ToLower().Contains(kw)) ||
-                    (e.Bcc != null && e.Bcc.ToLower().Contains(kw)));
-            }
+            var from = criteria.From.ToLower();
+            query = query.Where(e => e.From.ToLower().Contains(from));
         }
 
-        return query;
-    }
+        if (!string.IsNullOrWhiteSpace(criteria.To))
+        {
+            var to = criteria.To.ToLower();
+            query = query.Where(e => e.To.ToLower().Contains(to));
+        }
 
-    /// <summary>
-    /// Applies date range filtering
-    /// </summary>
-    private IQueryable<EmailMessage> ApplyDateFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
+        if (!string.IsNullOrWhiteSpace(criteria.Cc))
+        {
+            var cc = criteria.Cc.ToLower();
+            query = query.Where(e => e.Cc != null && e.Cc.ToLower().Contains(cc));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.Bcc))
+        {
+            var bcc = criteria.Bcc.ToLower();
+            query = query.Where(e => e.Bcc != null && e.Bcc.ToLower().Contains(bcc));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.Subject))
+        {
+            var subject = criteria.Subject.ToLower();
+            query = query.Where(e => e.Subject.ToLower().Contains(subject));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.Body))
+        {
+            var body = criteria.Body.ToLower();
+            query = query.Where(e => e.TextBody.ToLower().Contains(body));
+        }
+
+        // Date filters
         if (criteria.After.HasValue)
+        {
             query = query.Where(e => e.DateReceived >= criteria.After.Value);
+        }
 
         if (criteria.Before.HasValue)
+        {
             query = query.Where(e => e.DateReceived <= criteria.Before.Value);
+        }
 
         if (criteria.On.HasValue)
         {
-            var startOfDay = criteria.On.Value.Date;
-            var endOfDay = startOfDay.AddDays(1);
-            query = query.Where(e => e.DateReceived >= startOfDay && e.DateReceived < endOfDay);
+            var onDate = criteria.On.Value.Date;
+            query = query.Where(e => e.DateReceived.Date == onDate);
         }
 
         if (criteria.OlderThanDays.HasValue)
         {
-            var cutoffDate = DateTime.UtcNow.AddDays(-criteria.OlderThanDays.Value);
+            var cutoffDate = DateTime.Now.AddDays(-criteria.OlderThanDays.Value);
             query = query.Where(e => e.DateReceived < cutoffDate);
         }
 
         if (criteria.NewerThanDays.HasValue)
         {
-            var cutoffDate = DateTime.UtcNow.AddDays(-criteria.NewerThanDays.Value);
+            var cutoffDate = DateTime.Now.AddDays(-criteria.NewerThanDays.Value);
             query = query.Where(e => e.DateReceived > cutoffDate);
         }
 
-        return query;
-    }
-
-    /// <summary>
-    /// Applies size filtering
-    /// </summary>
-    private IQueryable<EmailMessage> ApplySizeFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
+        // Size filters
         if (criteria.LargerThanBytes.HasValue)
-            query = query.Where(e => e.Size > criteria.LargerThanBytes.Value);
-
-        if (criteria.SmallerThanBytes.HasValue)
-            query = query.Where(e => e.Size < criteria.SmallerThanBytes.Value);
-
-        return query;
-    }
-
-    /// <summary>
-    /// Applies status filtering (read, important, etc.)
-    /// </summary>
-    private IQueryable<EmailMessage> ApplyStatusFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
-        if (criteria.IsRead.HasValue)
-            query = query.Where(e => e.IsRead == criteria.IsRead.Value);
-
-        if (criteria.IsUnread.HasValue)
-            query = query.Where(e => e.IsRead == !criteria.IsUnread.Value);
-
-        if (criteria.IsStarred.HasValue)
-            query = query.Where(e => e.IsImportant == criteria.IsStarred.Value);
-
-        if (criteria.IsImportant.HasValue)
-            query = query.Where(e => e.IsImportant == criteria.IsImportant.Value);
-
-        if (criteria.IsDraft.HasValue)
-            query = query.Where(e => e.IsDraft == criteria.IsDraft.Value);
-
-        if (criteria.IsSent.HasValue)
         {
-            if (criteria.IsSent.Value)
-                query = query.Where(e => e.Folder.ToUpper() == "SENT");
-            else
-                query = query.Where(e => e.Folder.ToUpper() != "SENT");
+            query = query.Where(e => e.Size > criteria.LargerThanBytes.Value);
         }
 
-        if (criteria.IsSpam.HasValue)
-            query = query.Where(e => e.IsSpam == criteria.IsSpam.Value);
+        if (criteria.SmallerThanBytes.HasValue)
+        {
+            query = query.Where(e => e.Size < criteria.SmallerThanBytes.Value);
+        }
 
-        if (criteria.IsDeleted.HasValue)
-            query = query.Where(e => e.IsDeleted == criteria.IsDeleted.Value);
+        // Status filters
+        if (criteria.IsRead.HasValue)
+        {
+            query = query.Where(e => e.IsRead == criteria.IsRead.Value);
+        }
 
-        return query;
-    }
+        if (criteria.IsUnread.HasValue)
+        {
+            query = query.Where(e => e.IsRead == !criteria.IsUnread.Value);
+        }
 
-    /// <summary>
-    /// Applies attachment filtering
-    /// </summary>
-    private IQueryable<EmailMessage> ApplyAttachmentFilters(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
-    {
+        if (criteria.IsImportant.HasValue)
+        {
+            query = query.Where(e => e.IsImportant == criteria.IsImportant.Value);
+        }
+
+        if (criteria.IsDraft.HasValue)
+        {
+            query = query.Where(e => e.IsDraft == criteria.IsDraft.Value);
+        }
+
+        // Attachment filters
         if (criteria.HasAttachment.HasValue)
+        {
             query = query.Where(e => e.HasAttachments == criteria.HasAttachment.Value);
+        }
 
-        if (!string.IsNullOrEmpty(criteria.AttachmentName))
+        if (!string.IsNullOrWhiteSpace(criteria.AttachmentName))
         {
             var attachmentName = criteria.AttachmentName.ToLower();
             query = query.Where(e => e.Attachments.Any(a => a.FileName.ToLower().Contains(attachmentName)));
         }
 
-        if (!string.IsNullOrEmpty(criteria.AttachmentType))
+        if (!string.IsNullOrWhiteSpace(criteria.AttachmentType))
         {
-            var extension = criteria.AttachmentType.ToLower();
-            if (!extension.StartsWith("."))
-                extension = "." + extension;
-            query = query.Where(e => e.Attachments.Any(a => a.FileName.ToLower().EndsWith(extension)));
+            var attachmentType = criteria.AttachmentType.ToLower();
+            query = query.Where(e => e.Attachments.Any(a => a.ContentType.ToLower().Contains(attachmentType)));
+        }
+
+        // Folder filters
+        if (!string.IsNullOrWhiteSpace(criteria.FolderName))
+        {
+            query = query.Where(e => e.Folder == criteria.FolderName);
+        }
+
+        // Account filters
+        if (criteria.AccountId.HasValue)
+        {
+            query = query.Where(e => e.AccountId == criteria.AccountId.Value);
+        }
+
+        if (criteria.AccountIds?.Any() == true)
+        {
+            query = query.Where(e => criteria.AccountIds.Contains(e.AccountId));
+        }
+
+        // Exclude deleted emails unless specifically requested
+        if (!criteria.IncludeDeleted)
+        {
+            query = query.Where(e => e.Folder != "Deleted Items" && e.Folder != "Trash");
+        }
+
+        // Exclude spam unless specifically requested
+        if (!criteria.IncludeSpam)
+        {
+            query = query.Where(e => e.Folder != "Spam" && e.Folder != "Junk Email");
         }
 
         return query;
     }
 
     /// <summary>
-    /// Applies ranking/scoring to search results for relevance
+    /// Apply sorting to the query
     /// </summary>
-    private IEnumerable<EmailMessage> ApplyRanking(IEnumerable<EmailMessage> emails, EmailSearchCriteria criteria)
+    private IQueryable<EmailMessage> ApplySorting(IQueryable<EmailMessage> query, EmailSearchCriteria criteria)
     {
-        if (criteria.SortOrder == SearchSortOrder.Relevance && !string.IsNullOrEmpty(criteria.Keyword))
-        {
-            return emails.Select(email => new { Email = email, Score = CalculateRelevanceScore(email, criteria) })
-                        .OrderByDescending(x => x.Score)
-                        .ThenByDescending(x => x.Email.DateReceived)
-                        .Select(x => x.Email);
-        }
-
         return criteria.SortOrder switch
         {
-            SearchSortOrder.DateAscending => emails.OrderBy(e => e.DateReceived),
-            SearchSortOrder.DateDescending => emails.OrderByDescending(e => e.DateReceived),
-            SearchSortOrder.SenderAscending => emails.OrderBy(e => e.From),
-            SearchSortOrder.SenderDescending => emails.OrderByDescending(e => e.From),
-            SearchSortOrder.SubjectAscending => emails.OrderBy(e => e.Subject),
-            SearchSortOrder.SubjectDescending => emails.OrderByDescending(e => e.Subject),
-            SearchSortOrder.SizeAscending => emails.OrderBy(e => e.Size),
-            SearchSortOrder.SizeDescending => emails.OrderByDescending(e => e.Size),
-            _ => emails.OrderByDescending(e => e.DateReceived),
+            SearchSortOrder.DateAscending => query.OrderBy(e => e.DateReceived),
+            SearchSortOrder.DateDescending => query.OrderByDescending(e => e.DateReceived),
+            SearchSortOrder.SenderAscending => query.OrderBy(e => e.From),
+            SearchSortOrder.SenderDescending => query.OrderByDescending(e => e.From),
+            SearchSortOrder.SubjectAscending => query.OrderBy(e => e.Subject),
+            SearchSortOrder.SubjectDescending => query.OrderByDescending(e => e.Subject),
+            SearchSortOrder.SizeAscending => query.OrderBy(e => e.Size),
+            SearchSortOrder.SizeDescending => query.OrderByDescending(e => e.Size),
+            SearchSortOrder.Relevance => query.OrderByDescending(e => e.DateReceived), // Default to date for relevance
+            _ => query.OrderByDescending(e => e.DateReceived)
         };
     }
 
     /// <summary>
-    /// Calculates relevance score for search ranking
+    /// Gets search suggestions based on partial input
     /// </summary>
-    private double CalculateRelevanceScore(EmailMessage email, EmailSearchCriteria criteria)
+    public async Task<List<string>> GetSearchSuggestionsAsync(
+        string partialQuery,
+        int maxSuggestions = 10,
+        CancellationToken cancellationToken = default)
     {
-        double score = 0;
-
-        if (string.IsNullOrEmpty(criteria.Keyword))
-            return score;
-
-        var keywords = criteria.Keyword.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var keyword in keywords)
-        {
-            // Subject matches are worth more
-            if (email.Subject?.ToLower().Contains(keyword) == true)
-                score += 10;
-
-            // From/To matches
-            if (email.From.ToLower().Contains(keyword))
-                score += 5;
-            if (email.To.ToLower().Contains(keyword))
-                score += 3;
-
-            // Body matches
-            if (email.TextBody?.ToLower().Contains(keyword) == true)
-                score += 2;
-            if (email.HtmlBody?.ToLower().Contains(keyword) == true)
-                score += 2;
-
-            // Exact matches get bonus points
-            if (email.Subject?.ToLower() == keyword)
-                score += 20;
-        }
-
-        // Boost for recent emails
-        var daysSinceReceived = (DateTime.UtcNow - email.DateReceived).TotalDays;
-        if (daysSinceReceived < 7)
-            score += 5;
-        else if (daysSinceReceived < 30)
-            score += 2;
-
-        // Boost for important emails
-        if (email.IsImportant)
-            score += 3;
-
-        // Boost for unread emails
-        if (!email.IsRead)
-            score += 1;
-
-        return score;
-    }
-
-    /// <summary>
-    /// Applies pagination to search results
-    /// </summary>
-    private IEnumerable<EmailMessage> ApplyPagination(IEnumerable<EmailMessage> emails, EmailSearchCriteria criteria)
-    {
-        return emails.Skip(criteria.Offset).Take(criteria.MaxResults);
-    }
-
-    /// <summary>
-    /// Gets search suggestions based on partial query
-    /// </summary>
-    public async Task<List<string>> GetSearchSuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
-    {
-        var suggestions = new List<string>();
-
-        if (string.IsNullOrWhiteSpace(partialQuery))
-            return suggestions;
-
         try
         {
-            // Add common search operators
-            var operators = new[]
+            var suggestions = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(partialQuery))
             {
-                "from:", "to:", "cc:", "bcc:", "subject:", "body:", "has:attachment",
-                "is:read", "is:unread", "is:important", "is:starred", "is:draft",
-                "before:", "after:", "larger:", "smaller:", "in:inbox", "in:sent"
-            };
+                return suggestions;
+            }
 
-            suggestions.AddRange(operators.Where(op => op.StartsWith(partialQuery, StringComparison.OrdinalIgnoreCase)));
+            var query = _repository.GetEmailsQuery();
+            var partial = partialQuery.ToLower();
 
-            // Add recent sender suggestions
-            var emails = await _repository.GetRecentEmailsAsync(100, cancellationToken);
-            var senders = emails.Select(e => e.From)
-                               .Where(from => from.ToLower().Contains(partialQuery.ToLower()))
-                               .Distinct()
-                               .Take(5);
+            // Get sender suggestions
+            var senderSuggestions = await query
+                .Where(e => e.From.ToLower().Contains(partial))
+                .Select(e => e.From)
+                .Distinct()
+                .Take(maxSuggestions / 2)
+                .ToListAsync(cancellationToken);
 
-            suggestions.AddRange(senders.Select(sender => $"from:{sender}"));
+            suggestions.AddRange(senderSuggestions.Select(s => $"from:{s}"));
 
-            return suggestions.Take(10).ToList();
+            // Get subject suggestions
+            var subjectSuggestions = await query
+                .Where(e => e.Subject.ToLower().Contains(partial))
+                .Select(e => e.Subject)
+                .Distinct()
+                .Take(maxSuggestions / 2)
+                .ToListAsync(cancellationToken);
+
+            suggestions.AddRange(subjectSuggestions.Select(s => $"subject:{s}"));
+
+            return suggestions.Take(maxSuggestions).ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating search suggestions");
-            return suggestions;
+            _logger.LogError(ex, "Error getting search suggestions for: {Query}", partialQuery);
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// Gets popular search terms
+    /// </summary>
+    public async Task<List<string>> GetPopularSearchTermsAsync(
+        int maxTerms = 20,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = _repository.GetEmailsQuery();
+
+            // Get most common senders
+            var popularSenders = await query
+                .GroupBy(e => e.From)
+                .OrderByDescending(g => g.Count())
+                .Take(maxTerms / 2)
+                .Select(g => $"from:{g.Key}")
+                .ToListAsync(cancellationToken);
+
+            // Get most common subjects (words)
+            var popularSubjects = await query
+                .Where(e => !string.IsNullOrEmpty(e.Subject))
+                .GroupBy(e => e.Subject)
+                .OrderByDescending(g => g.Count())
+                .Take(maxTerms / 2)
+                .Select(g => g.Key)
+                .ToListAsync(cancellationToken);
+
+            var results = new List<string>();
+            results.AddRange(popularSenders);
+            results.AddRange(popularSubjects);
+
+            return results.Take(maxTerms).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting popular search terms");
+            return new List<string>();
         }
     }
 }

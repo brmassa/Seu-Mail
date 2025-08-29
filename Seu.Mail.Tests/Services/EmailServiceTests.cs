@@ -1,3 +1,4 @@
+using System;
 using Seu.Mail.Contracts.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,8 @@ public class EmailServiceTests : IAsyncDisposable
         _mockLogger = Substitute.For<ILogger<EmailService>>();
         _mockEncryptionService = Substitute.For<IEncryptionService>();
 
-        _emailService = new EmailService(_context, _mockLogger, _mockEncryptionService);
+        var mockServiceProvider = Substitute.For<IServiceProvider>();
+        _emailService = new EmailService(_context, _mockLogger, _mockEncryptionService, mockServiceProvider);
 
         // Setup encryption service defaults
         _mockEncryptionService.DecryptString(Arg.Any<string>())

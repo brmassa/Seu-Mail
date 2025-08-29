@@ -16,6 +16,7 @@ public class EmailSearchServiceTests
     private readonly Mock<IEmailRepository> _mockRepository;
     private readonly EmailSearchQueryParser _parser;
     private readonly Mock<ILogger<EmailSearchService>> _mockLogger;
+    private readonly EmailSearchOptions _options;
     private readonly EmailSearchService _searchService;
 
     public EmailSearchServiceTests()
@@ -23,6 +24,7 @@ public class EmailSearchServiceTests
         _mockRepository = new Mock<IEmailRepository>();
         _parser = new EmailSearchQueryParser();
         _mockLogger = new Mock<ILogger<EmailSearchService>>();
+        _options = new EmailSearchOptions();
         _searchService = new EmailSearchService(_mockRepository.Object, _parser, _mockLogger.Object);
     }
 

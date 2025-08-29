@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Seu.Mail.Core.Models;
@@ -11,6 +12,12 @@ namespace Seu.Mail.Search.Services;
 /// </summary>
 public interface IEmailRepository
 {
+    /// <summary>
+    /// Gets a queryable collection of all emails for advanced filtering
+    /// </summary>
+    /// <returns>Queryable emails collection</returns>
+    IQueryable<EmailMessage> GetEmailsQuery();
+
     /// <summary>
     /// Gets all emails from the repository
     /// </summary>

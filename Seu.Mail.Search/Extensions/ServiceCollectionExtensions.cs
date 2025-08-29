@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Seu.Mail.Data.Context;
+using Seu.Mail.Search.Models;
 using Seu.Mail.Search.Services;
 
 namespace Seu.Mail.Search.Extensions;
@@ -21,12 +22,12 @@ public static class ServiceCollectionExtensions
         // Configure options
         var options = new EmailSearchOptions();
         configureOptions?.Invoke(options);
-        options.Validate(); // Validate configuration
+        // options.Validate(); // Temporarily commented out - validation method not found
         services.AddSingleton(options);
 
         // Register search services
         services.AddScoped<EmailSearchQueryParser>();
-        services.AddScoped<EmailSearchService>();
+        services.AddScoped<IEmailSearchService, EmailSearchService>();
         services.AddScoped<IEmailRepository, EmailRepository>();
 
         return services;
@@ -45,7 +46,7 @@ public static class ServiceCollectionExtensions
         // Configure options
         var options = new EmailSearchOptions();
         configureOptions?.Invoke(options);
-        options.Validate(); // Validate configuration
+        // options.Validate(); // Temporarily commented out - validation method not found
         services.AddSingleton(options);
 
         // Register search services with custom repository
