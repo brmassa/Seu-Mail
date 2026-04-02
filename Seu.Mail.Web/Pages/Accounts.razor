@@ -99,8 +99,7 @@
                                             <div class="row mt-1">
                                                 <div class="col-12">
                                                     <small class="text-muted">
-                                                        <strong>Last
-                                                            Sync:</strong> @(account.LastSyncAt?.ToString("MMM dd, yyyy 'at' HH:mm") ?? "Never")
+                                                        <strong>Last Sync:</strong> @(account.LastSyncAt?.ToString("MMM dd, yyyy 'at' HH:mm") ?? "Never")
                                                     </small>
                                                 </div>
                                             </div>
@@ -118,16 +117,6 @@
                                                 Set Default
                                             </button>
                                         }
-                                        <button class="btn btn-outline-secondary btn-sm mb-1"
-                                                @onclick="() => EditAccount(account)">
-                                            <i class="fas fa-edit"></i>
-                                            Edit
-                                        </button>
-                                        <button class="btn btn-outline-warning btn-sm mb-1"
-                                                @onclick="() => SyncFolders(account)">
-                                            <i class="fas fa-folder-open"></i>
-                                            Folders
-                                        </button>
                                         <button class="btn btn-outline-primary btn-sm mb-1"
                                                 @onclick="() => TestConnection(account)">
                                             <i class="fas fa-plug"></i>
@@ -138,15 +127,15 @@
                                             <i class="fas fa-sync-alt"></i>
                                             Sync
                                         </button>
-                                        <button class="btn btn-outline-danger btn-sm mb-1"
-                                                @onclick="() => ForceResyncAccount(account)">
-                                            <i class="fas fa-exclamation-circle"></i>
-                                            Force Resync
+                                        <button class="btn btn-outline-warning btn-sm mb-1"
+                                                @onclick="() => SyncFolders(account)">
+                                            <i class="fas fa-folder-open"></i>
+                                            Folders
                                         </button>
-                                        <button class="btn btn-outline-danger btn-sm mb-1"
-                                                @onclick="() => ResetAccountEmails(account)">
-                                            <i class="fas fa-trash-alt"></i>
-                                            Reset (Delete All Emails)
+                                        <button class="btn btn-outline-secondary btn-sm mb-1"
+                                                @onclick="() => EditAccount(account)">
+                                            <i class="fas fa-edit"></i>
+                                            Edit
                                         </button>
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @onclick="() => DeleteAccount(account)">
@@ -187,22 +176,21 @@
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@accountModel" OnValidSubmit="@SaveAccount">
-                        <DataAnnotationsValidator/>
+                        <DataAnnotationsValidator />
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Display Name <span
-                                        class="text-muted">(optional)</span></label>
+                                <label class="form-label">Display Name <span class="text-muted">(optional)</span></label>
                                 <InputText class="form-control" @bind-Value="accountModel.DisplayName"
-                                           placeholder="Your Name (optional - will use email if empty)"/>
-                                <ValidationMessage For="@(() => accountModel.DisplayName)"/>
+                                          placeholder="Your Name (optional - will use email if empty)" />
+                                <ValidationMessage For="@(() => accountModel.DisplayName)" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Email Address <span class="text-danger">*</span></label>
                                 <InputText class="form-control" @bind-Value="accountModel.Email"
-                                           placeholder="your.email@example.com" type="email" required
-                                           @onblur="OnEmailAddressChanged"/>
-                                <ValidationMessage For="@(() => accountModel.Email)"/>
+                                          placeholder="your.email@example.com" type="email" required
+                                          @onblur="OnEmailAddressChanged" />
+                                <ValidationMessage For="@(() => accountModel.Email)" />
                                 @if (isDetectingProvider)
                                 {
                                     <small class="text-info">
@@ -212,8 +200,7 @@
                                 }
                                 else if (!string.IsNullOrEmpty(detectedProviderMessage))
                                 {
-                                    <small
-                                        class="@(detectedProviderMessage.Contains("Error") || detectedProviderMessage.Contains("Could not") ? "text-warning" : "text-success")">
+                                    <small class="@(detectedProviderMessage.Contains("Error") || detectedProviderMessage.Contains("Could not") ? "text-warning" : "text-success")">
                                         <i class="fas @(detectedProviderMessage.Contains("Error") || detectedProviderMessage.Contains("Could not") ? "fa-exclamation-triangle" : "fa-check") me-1"></i>
                                         @detectedProviderMessage
                                     </small>
@@ -224,14 +211,13 @@
                         <div class="mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
                             <InputText class="form-control" @bind-Value="accountModel.Password"
-                                       @oninput="OnPasswordChanged"
-                                       placeholder="Your email password" type="password" required/>
-                            <ValidationMessage For="@(() => accountModel.Password)"/>
+                                      @oninput="OnPasswordChanged"
+                                      placeholder="Your email password" type="password" required />
+                            <ValidationMessage For="@(() => accountModel.Password)" />
                             <div class="form-text">
                                 <i class="fas fa-info-circle me-1"></i>
                                 Use an app password for Gmail and other providers that require it.
-                                <a href="#" @onclick:preventDefault="true" @onclick="ShowPasswordHelp"
-                                   class="text-decoration-none">
+                                <a href="#" @onclick:preventDefault="true" @onclick="ShowPasswordHelp" class="text-decoration-none">
                                     <small>Need help?</small>
                                 </a>
                             </div>
@@ -268,13 +254,13 @@
                                     <div class="col-md-8">
                                         <label class="form-label">SMTP Server <span class="text-danger">*</span></label>
                                         <InputText class="form-control" @bind-Value="accountModel.SmtpServer"
-                                                   placeholder="smtp.example.com" required/>
-                                        <ValidationMessage For="@(() => accountModel.SmtpServer)"/>
+                                                  placeholder="smtp.example.com" required />
+                                        <ValidationMessage For="@(() => accountModel.SmtpServer)" />
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Port <span class="text-danger">*</span></label>
-                                        <InputNumber class="form-control" @bind-Value="accountModel.SmtpPort" required/>
-                                        <ValidationMessage For="@(() => accountModel.SmtpPort)"/>
+                                        <InputNumber class="form-control" @bind-Value="accountModel.SmtpPort" required />
+                                        <ValidationMessage For="@(() => accountModel.SmtpPort)" />
                                     </div>
                                 </div>
                             </div>
@@ -293,18 +279,18 @@
                                     <div class="col-md-8">
                                         <label class="form-label">IMAP Server <span class="text-danger">*</span></label>
                                         <InputText class="form-control" @bind-Value="accountModel.ImapServer"
-                                                   placeholder="imap.example.com" required/>
-                                        <ValidationMessage For="@(() => accountModel.ImapServer)"/>
+                                                  placeholder="imap.example.com" required />
+                                        <ValidationMessage For="@(() => accountModel.ImapServer)" />
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Port <span class="text-danger">*</span></label>
-                                        <InputNumber class="form-control" @bind-Value="accountModel.ImapPort" required/>
-                                        <ValidationMessage For="@(() => accountModel.ImapPort)"/>
+                                        <InputNumber class="form-control" @bind-Value="accountModel.ImapPort" required />
+                                        <ValidationMessage For="@(() => accountModel.ImapPort)" />
                                     </div>
                                 </div>
 
                                 <div class="form-check">
-                                    <InputCheckbox class="form-check-input" @bind-Value="accountModel.UseSsl"/>
+                                    <InputCheckbox class="form-check-input" @bind-Value="accountModel.UseSsl" />
                                     <label class="form-check-label">
                                         Use SSL/TLS encryption (recommended)
                                     </label>
@@ -313,8 +299,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-secondary" @onclick="TestAccountConnection"
-                                    disabled="@isTestingConnection">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="TestAccountConnection" disabled="@isTestingConnection">
                                 @if (isTestingConnection)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
@@ -343,8 +328,7 @@
                                         @:Update Account
                                     }
                                 </button>
-                                <button type="button" class="btn btn-outline-success ms-2"
-                                        @onclick="SaveAccountWithoutTest" disabled="@isSaving">
+                                <button type="button" class="btn btn-outline-success ms-2" @onclick="SaveAccountWithoutTest" disabled="@isSaving">
                                     @if (isSaving)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -379,8 +363,7 @@
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to delete the account <strong>@accountToDelete.Email</strong>?</p>
-                    <p class="text-warning">This action cannot be undone. All emails associated with this account will
-                        also be deleted.</p>
+                    <p class="text-warning">This action cannot be undone. All emails associated with this account will also be deleted.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="HideDeleteModal">Cancel</button>
@@ -467,36 +450,6 @@
         }
     }
 
-    private async Task ForceResyncAccount(EmailAccount account)
-    {
-        // Delete all emails for this account, then sync
-        try
-        {
-            await EmailService.DeleteAllEmailsForAccountAsync(account.Id);
-            ShowToast("Info", $"All emails for {account.Email} deleted. Starting resync...");
-            await EmailService.SyncEmailsAsync(account);
-            ShowToast("Success", $"Resync complete for {account.Email}.");
-        }
-        catch (Exception ex)
-        {
-            ShowToast("Error", $"Force resync failed: {ex.Message}");
-        }
-    }
-
-    private async Task ResetAccountEmails(EmailAccount account)
-    {
-        // Delete all emails for this account only
-        try
-        {
-            await EmailService.DeleteAllEmailsForAccountAsync(account.Id);
-            ShowToast("Info", $"All emails for {account.Email} deleted.");
-        }
-        catch (Exception ex)
-        {
-            ShowToast("Error", $"Reset failed: {ex.Message}");
-        }
-    }
-
     private void ShowAddAccountModal()
     {
         editingAccount = null;
@@ -535,12 +488,12 @@
 
     private async Task SaveAccount()
     {
-        await SaveAccountInternal(true);
+        await SaveAccountInternal(testConnection: true);
     }
 
     private async Task SaveAccountWithoutTest()
     {
-        await SaveAccountInternal(false);
+        await SaveAccountInternal(testConnection: false);
     }
 
     private async Task SaveAccountInternal(bool testConnection)
@@ -598,7 +551,6 @@
                 {
                     accountModel.Password = editingAccount.Password; // Keep existing encrypted password
                 }
-
                 success = await AccountService.UpdateAccountAsync(accountModel);
                 if (success)
                 {
@@ -796,7 +748,6 @@
         {
             passwordChanged = true;
         }
-
         accountModel.Password = newPassword;
     }
 
@@ -880,5 +831,4 @@
     {
         ShowToast("Password Help", "For Gmail: Use App Passwords (Settings > Security > 2-Step Verification > App passwords). For Outlook: Use your regular password or App Password if 2FA is enabled. For other providers: Check their documentation for IMAP/SMTP authentication requirements.");
     }
-
 }

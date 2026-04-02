@@ -27,7 +27,7 @@
         <PackageReference Include="NSubstitute" Version="5.3.0"/>
         <PackageReference Include="HtmlAgilityPack" Version="1.12.2"/>
         <PackageReference Include="MailKit" Version="4.13.0"/>
-        <PackageReference Include="MimeKit" Version="4.13.0"/>
+        <PackageReference Include="MimeKit" Version="4.15.1" />
     </ItemGroup>
 
     <ItemGroup>
