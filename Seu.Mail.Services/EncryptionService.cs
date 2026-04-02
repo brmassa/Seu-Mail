@@ -264,8 +264,7 @@ public class EncryptionService : IEncryptionService
             Array.Copy(combinedBytes, 32, hashBytes, 0, 32);
 
             // Hash the provided password with the extracted salt
-            using var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 100000, HashAlgorithmName.SHA256);
-            var computedHash = pbkdf2.GetBytes(32);
+            var computedHash = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100000, HashAlgorithmName.SHA256, 32);
 
             // Compare the hashes in constant time to prevent timing attacks
             return CryptographicOperations.FixedTimeEquals(hashBytes, computedHash);
@@ -301,8 +300,7 @@ public class EncryptionService : IEncryptionService
             }
 
             // Hash the password with the salt using PBKDF2
-            using var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 100000, HashAlgorithmName.SHA256);
-            var hashBytes = pbkdf2.GetBytes(32);
+            var hashBytes = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100000, HashAlgorithmName.SHA256, 32);
 
             // Combine salt and hash
             var combinedBytes = new byte[64]; // 32 salt + 32 hash

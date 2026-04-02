@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Seu.Mail.Calendar</RootNamespace>
@@ -26,10 +26,9 @@
 
     <ItemGroup>
         <PackageReference Include="Ical.Net" Version="5.2.1" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8"/>
-        <PackageReference Include="System.Text.Json" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5" />
     </ItemGroup>
 
     <ItemGroup>
